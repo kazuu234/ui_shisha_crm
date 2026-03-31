@@ -1,8 +1,8 @@
 #!/bin/bash
 # _common.sh — 共通関数・変数（source して使う）
 
-WORKDIR="${WORKDIR:-/var/share/yorusaro/src/headless_shisha_crm}"
-DEFAULT_BRANCH="master"
+WORKDIR="${WORKDIR:-/var/share/yorusaro/src/ui_shisha_crm}"
+DEFAULT_BRANCH="main"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 

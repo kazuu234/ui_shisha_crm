@@ -93,7 +93,7 @@ cluster の全 design slice に対応する dispatch unit が 100/100 + smoke te
 
 1. **audit 用ブランチを作成する**（実装ではなく read-only review）
 ```bash
-./scripts/start-feature.sh --branch review/<cluster名>-closure-audit-r1 --title "<cluster名> closure audit"
+./scripts/start-feature.sh --branch review/<audit slug>-closure-audit-r1 --title "<audit対象> closure audit"
 ```
 
 2. **Codex に closure audit を依頼する**
@@ -101,9 +101,9 @@ cluster の全 design slice に対応する dispatch unit が 100/100 + smoke te
 `request-review.sh` は dispatch unit の diff 用なので、closure audit では **手動で指示を構築** して `mcp__codex__codex` に渡す。
 
 指示に含める内容:
-- **Locked spec baseline**: master の commit hash + 設計書パス一覧
+- **Locked spec baseline**: main の commit hash + 設計書パス一覧
 - **Acceptance criteria**: 設計書全体に対する棚卸し。REVIEW_SCORECARD.md で 100/100 採点
-- **層1（回帰確認）**: 各 slice の postcondition が master 上で維持されているか
+- **層1（回帰確認）**: 各 slice の postcondition が main 上で維持されているか
 - **層2（結合面チェック）**: slice 間の入出力・状態遷移・guard の整合性。**どの slice 間のどの接合点を見るか明示的に列挙する**
 - **Non-goals**: コード修正、docs の書き換え、merge
 - **出力フォーマット**: Verdict / Score / Findings / Gate Check / Next smallest slice

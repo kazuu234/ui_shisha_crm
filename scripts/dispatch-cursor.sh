@@ -1,5 +1,5 @@
 #!/bin/bash
-# dispatch-cursor.sh — Cursor agent (headless subprocess) に実装指示を送信
+# dispatch-cursor.sh — Cursor agent (headless subprocess) に実装指示を送る
 #
 # Usage:
 #   ./scripts/dispatch-cursor.sh --prompt-file /tmp/instruction.md
@@ -51,16 +51,9 @@ Before editing, read these project rules:
 For any Django command, load the environment first:
 
 \`\`\`bash
-if [ -f /var/share/yorusaro/src/stripe_billing_production/scripts/setup_env.sh ]; then
-  source /var/share/yorusaro/src/stripe_billing_production/scripts/setup_env.sh >/dev/null 2>&1
-fi
-ENV_REPO_DIR=\"${WORKDIR}\"
-if [ ! -f \"\${ENV_REPO_DIR}/.env\" ] && [ -f /var/share/yorusaro/src/stripe_billing_tickets_production/.env ]; then
-  ENV_REPO_DIR=/var/share/yorusaro/src/stripe_billing_tickets_production
-fi
-if [ -f \"\${ENV_REPO_DIR}/.env\" ]; then
+if [ -f \"${WORKDIR}/.env\" ]; then
   set -a
-  source \"\${ENV_REPO_DIR}/.env\"
+  source \"${WORKDIR}/.env\"
   set +a
 fi
 \`\`\`
