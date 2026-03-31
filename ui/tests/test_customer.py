@@ -22,6 +22,12 @@ class CustomerSelectAndSearchTests(TestCase):
             role="staff",
             staff_type="regular",
         )
+        cls.owner = Staff.objects.create_user(
+            store=cls.store,
+            display_name="Cust Owner",
+            role="owner",
+            staff_type="owner",
+        )
 
     def setUp(self):
         self.client.force_login(self.staff)
@@ -197,6 +203,16 @@ class CustomerSelectAndSearchTests(TestCase):
     def test_customer_select_has_search_input(self):
         response = self.client.get("/s/customers/")
         self.assertContains(response, 'hx-get="/s/customers/search/"')
+
+    def test_session_stub_exists(self):
+        customer = Customer.objects.create(store=self.store, name="SessionStub")
+        url = f"/s/customers/{customer.pk}/session/"
+        for user in (self.staff, self.owner):
+            self.client.force_login(user)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200)
+            self.assertTemplateUsed(response, "ui/staff/stub_session.html")
+            self.assertEqual(response.context["active_tab"], "session")
 
     def test_create_customer_modal_error_no_double_nest(self):
         response = self.client.post("/s/customers/new/", {"name": ""})

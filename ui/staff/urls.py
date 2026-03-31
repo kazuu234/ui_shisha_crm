@@ -6,6 +6,7 @@ from ui.staff.views.customer import (
     CustomerSearchView,
     CustomerSelectView,
 )
+from ui.staff.views.stub import StubSessionView
 
 app_name = "staff"
 
@@ -15,4 +16,9 @@ urlpatterns = [
     path("customers/", CustomerSelectView.as_view(), name="customers"),
     path("customers/search/", CustomerSearchView.as_view(), name="customer-search"),
     path("customers/new/", CustomerCreateView.as_view(), name="customer-create"),
+    path(
+        "customers/<uuid:pk>/session/",
+        StubSessionView.as_view(),
+        name="session",
+    ),
 ]
