@@ -1,0 +1,85 @@
+{% extends "ui/base.html" %}
+{% load static %}
+
+{% block extra_head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+{% endblock %}
+
+{% block body %}
+<div class="min-h-screen flex bg-bg-base">
+  <aside class="w-[220px] shrink-0 border-r border-border-default bg-bg-surface flex flex-col">
+    <div class="h-[56px] flex items-center px-4 border-b border-border-default font-semibold text-text-primary">
+      Shisha CRM
+    </div>
+    <nav class="flex-1 py-4 px-2 space-y-1">
+      <a
+        href="/o/dashboard/"
+        class="flex items-center gap-3 px-3 py-2 rounded-sm text-sm {% if active_sidebar == 'dashboard' %}bg-bg-surface-alt text-accent font-medium{% else %}text-text-secondary hover:bg-bg-surface-alt/60{% endif %}"
+      >
+        {% include "ui/icons/bar-chart-2.svg" %}
+        <span>ダッシュボード</span>
+      </a>
+      <a
+        href="/o/customers/"
+        class="flex items-center gap-3 px-3 py-2 rounded-sm text-sm {% if active_sidebar == 'customers' %}bg-bg-surface-alt text-accent font-medium{% else %}text-text-secondary hover:bg-bg-surface-alt/60{% endif %}"
+      >
+        {% include "ui/icons/users.svg" %}
+        <span>顧客管理</span>
+      </a>
+      <a
+        href="/o/visits/"
+        class="flex items-center gap-3 px-3 py-2 rounded-sm text-sm {% if active_sidebar == 'visits' %}bg-bg-surface-alt text-accent font-medium{% else %}text-text-secondary hover:bg-bg-surface-alt/60{% endif %}"
+      >
+        {% include "ui/icons/calendar.svg" %}
+        <span>来店記録</span>
+      </a>
+      <a
+        href="/o/staff/"
+        class="flex items-center gap-3 px-3 py-2 rounded-sm text-sm {% if active_sidebar == 'staff' %}bg-bg-surface-alt text-accent font-medium{% else %}text-text-secondary hover:bg-bg-surface-alt/60{% endif %}"
+      >
+        {% include "ui/icons/user-cog.svg" %}
+        <span>スタッフ管理</span>
+      </a>
+      <a
+        href="/o/segments/settings/"
+        class="flex items-center gap-3 px-3 py-2 rounded-sm text-sm {% if active_sidebar == 'segments' %}bg-bg-surface-alt text-accent font-medium{% else %}text-text-secondary hover:bg-bg-surface-alt/60{% endif %}"
+      >
+        {% include "ui/icons/sliders.svg" %}
+        <span>セグメント設定</span>
+      </a>
+      <a
+        href="/o/imports/upload/"
+        class="flex items-center gap-3 px-3 py-2 rounded-sm text-sm {% if active_sidebar == 'imports' %}bg-bg-surface-alt text-accent font-medium{% else %}text-text-secondary hover:bg-bg-surface-alt/60{% endif %}"
+      >
+        {% include "ui/icons/upload.svg" %}
+        <span>Airレジ連携</span>
+      </a>
+    </nav>
+  </aside>
+
+  <div class="flex-1 flex flex-col min-w-0">
+    <header class="h-[56px] shrink-0 flex items-center justify-between px-6 border-b border-border-default bg-bg-surface">
+      <h1 class="text-lg font-semibold text-text-primary truncate pr-4">{% block page_title %}{% endblock %}</h1>
+      <div class="flex items-center gap-4 shrink-0">
+        <span class="text-sm text-text-secondary truncate max-w-[200px]">{{ request.user.display_name }}</span>
+        <form method="post" action="/o/logout/" class="inline">
+          {% csrf_token %}
+          <button type="submit" class="text-sm text-accent hover:text-accent-hover font-medium">
+            ログアウト
+          </button>
+        </form>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-6">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+{% block modal %}{% endblock %}
+
+<div x-data="{ show: false, message: '', type: 'success' }">
+  {% block toast %}{% endblock %}
+</div>
+{% endblock %}

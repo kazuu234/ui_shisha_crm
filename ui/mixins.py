@@ -15,6 +15,24 @@ class StaffRequiredMixin(AccessMixin):
         return super().dispatch(request, *args, **kwargs)
 
 
+class OwnerRequiredMixin(AccessMixin):
+    """role が owner であることを要求する。
+
+    挙動（基本設計書 §3.2 準拠）:
+    - 未認証 → /o/login/ へリダイレクト
+    - 認証済み + role が owner でない → /s/customers/ へリダイレクト
+    """
+
+    login_url = "/o/login/"
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if request.user.role != "owner":
+            return redirect("/s/customers/")
+        return super().dispatch(request, *args, **kwargs)
+
+
 class StoreMixin:
     """self.store と context["store"] をセットする。"""
 
