@@ -1,0 +1,17 @@
+<div class="bg-bg-surface rounded-t-md sm:rounded-md shadow-xl border border-border-default w-full">
+  <div class="p-4 border-b border-border-default flex items-center justify-between gap-3">
+    <h2 class="text-lg font-semibold text-text-primary">新規顧客登録</h2>
+    <button
+      type="button"
+      class="text-sm text-text-secondary hover:text-text-primary"
+      @click="showCreate = false"
+    >
+      閉じる
+    </button>
+  </div>
+  <div class="p-4">
+    <div id="create-modal-content">
+      {% include "ui/staff/_customer_create_form_content.html" %}
+    </div>
+  </div>
+</div>

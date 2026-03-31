@@ -1,0 +1,111 @@
+{% extends "ui/base_staff.html" %}
+
+{% block title %}顧客{% endblock %}
+
+{% block page_title %}顧客{% endblock %}
+
+{% block content %}
+<div
+  x-data="{ showSearch: false, showCreate: false }"
+  class="flex flex-col gap-4 -m-5 min-h-[calc(100vh-44px-56px-40px)]"
+>
+  <div class="flex flex-col gap-3 px-5 pt-1">
+    <button
+      type="button"
+      class="w-full flex items-center gap-3 px-4 py-3 rounded-md border border-border-default bg-bg-surface text-left text-text-secondary shadow-sm"
+      @click="showSearch = true"
+    >
+      <svg class="w-5 h-5 shrink-0 text-text-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+      </svg>
+      <span class="text-[17px]">顧客を検索</span>
+    </button>
+
+    <button
+      type="button"
+      class="w-full py-3 rounded-md bg-accent text-text-inverse font-medium text-[17px] hover:bg-accent-hover active:bg-accent-active transition-colors"
+      @click="showCreate = true"
+    >
+      新規登録
+    </button>
+  </div>
+
+  <div class="flex-1 px-5 pb-5">
+    {% if customers %}
+      <ul class="flex flex-col gap-3">
+        {% for customer in customers %}
+          <li>{% include "ui/staff/_customer_card.html" %}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="text-center text-text-secondary py-16">
+        <p class="text-[17px]">顧客がまだ登録されていません</p>
+      </div>
+    {% endif %}
+  </div>
+
+  {# 検索モーダル #}
+  <div
+    x-show="showSearch"
+    x-cloak
+    x-effect="if (showSearch) $nextTick(() => $refs.searchInput && $refs.searchInput.focus())"
+    class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-5"
+    style="display: none;"
+  >
+    <div
+      class="absolute inset-0 bg-text-primary/40"
+      @click="showSearch = false"
+      aria-hidden="true"
+    ></div>
+    <div
+      class="relative w-full max-w-lg bg-bg-surface rounded-t-md sm:rounded-md shadow-xl border border-border-default max-h-[85vh] flex flex-col"
+      @click.away="showSearch = false"
+    >
+      <div class="p-4 border-b border-border-default flex items-center justify-between gap-3">
+        <h2 class="text-lg font-semibold text-text-primary">顧客を検索</h2>
+        <button
+          type="button"
+          class="text-sm text-text-secondary hover:text-text-primary"
+          @click="showSearch = false"
+        >
+          閉じる
+        </button>
+      </div>
+      <div class="p-4">
+        <input
+          type="search"
+          name="q"
+          x-ref="searchInput"
+          placeholder="名前で検索"
+          autocomplete="off"
+          class="w-full border border-border-default rounded-sm p-3 text-[17px] bg-bg-surface text-text-primary"
+          hx-get="/s/customers/search/"
+          hx-trigger="input changed delay:300ms"
+          hx-target="#search-results"
+        />
+      </div>
+      <div id="search-results" class="flex-1 overflow-y-auto px-4 pb-4 min-h-[120px]"></div>
+    </div>
+  </div>
+
+  {# 新規登録モーダル #}
+  <div
+    x-show="showCreate"
+    x-cloak
+    class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-5"
+    style="display: none;"
+  >
+    <div
+      class="absolute inset-0 bg-text-primary/40"
+      @click="showCreate = false"
+      aria-hidden="true"
+    ></div>
+    <div
+      class="relative z-10 w-full max-w-md px-4 pb-6 sm:pb-0"
+      @click.away="showCreate = false"
+    >
+      {% include "ui/staff/_customer_create_modal.html" %}
+    </div>
+  </div>
+</div>
+{% endblock %}

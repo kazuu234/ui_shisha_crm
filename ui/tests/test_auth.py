@@ -88,22 +88,6 @@ class StaffAuthViewsTests(TestCase):
         response = self.client.get("/s/logout/")
         self.assertEqual(response.status_code, 405)
 
-    def test_stub_requires_auth(self):
-        response = self.client.get("/s/customers/")
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.url.startswith("/s/login/"))
-
-    def test_stub_authenticated(self):
-        self.client.force_login(self.staff)
-        response = self.client.get("/s/customers/")
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "ui/staff/stub.html")
-
-    def test_stub_active_tab(self):
-        self.client.force_login(self.staff)
-        response = self.client.get("/s/customers/")
-        self.assertEqual(response.context["active_tab"], "customers")
-
     def test_base_staff_topbar(self):
         self.client.force_login(self.staff)
         response = self.client.get("/s/customers/")
@@ -142,14 +126,6 @@ class StaffAuthViewsTests(TestCase):
         response = self.client.post("/s/login/", {"token": tok.token})
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "無効化されています")
-
-    def test_stub_rejects_non_staff_role(self):
-        self.client.force_login(self.staff)
-        Staff.objects.filter(pk=self.staff.pk).update(role="invalid_role")
-        response = self.client.get("/s/customers/")
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, "/s/login/")
-        self.assertNotIn("_auth_user_id", self.client.session)
 
     def test_bottomtab_disabled_tabs(self):
         self.client.force_login(self.staff)

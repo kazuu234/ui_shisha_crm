@@ -1,0 +1,28 @@
+<form
+  hx-post="/s/customers/new/"
+  hx-target="#create-modal-content"
+  hx-swap="innerHTML"
+  class="flex flex-col gap-4"
+>
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="bg-error-subtle text-error rounded-sm p-3 text-sm">
+      {% for error in form.non_field_errors %}
+        <p>{{ error }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+  <div>
+    <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-2">{{ form.name.label }}</label>
+    {{ form.name }}
+    {% if form.name.errors %}
+      <p class="text-error text-sm mt-2">{{ form.name.errors.0 }}</p>
+    {% endif %}
+  </div>
+  <button
+    type="submit"
+    class="w-full py-3 rounded-md bg-accent text-text-inverse font-medium text-[17px] hover:bg-accent-hover active:bg-accent-active transition-colors"
+  >
+    登録
+  </button>
+</form>
