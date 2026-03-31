@@ -1,0 +1,51 @@
+{% extends "ui/base.html" %}
+{% load static %}
+
+{% block body %}
+<div class="min-h-screen flex flex-col">
+  <header class="h-[44px] shrink-0 flex items-center justify-between gap-3 px-5 border-b border-border-default bg-bg-surface">
+    <div class="min-w-0 flex-1 font-semibold text-text-primary truncate">
+      {% block page_title %}{% endblock %}
+    </div>
+    <div class="flex items-center gap-3 shrink-0">
+      <span class="text-sm text-text-secondary truncate max-w-[140px]">{{ request.user.display_name }}</span>
+      <form method="post" action="/s/logout/" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="text-sm text-accent hover:text-accent-hover font-medium">
+          ログアウト
+        </button>
+      </form>
+    </div>
+  </header>
+
+  <main class="flex-1 overflow-y-auto p-5">
+    {% block content %}{% endblock %}
+  </main>
+
+  <nav class="h-[56px] shrink-0 flex items-center justify-around border-t border-border-default bg-bg-surface">
+    <a
+      href="/s/customers/"
+      class="flex flex-col items-center gap-1 text-xs {% if active_tab == 'customers' %}text-accent font-medium{% else %}text-text-muted{% endif %}"
+    >
+      {% include "ui/icons/users.svg" %}
+      <span>顧客</span>
+    </a>
+    <button type="button" disabled aria-disabled="true" class="flex flex-col items-center gap-1 text-xs text-text-muted opacity-50 cursor-not-allowed">
+      {% include "ui/icons/message-circle.svg" %}
+      <span>接客</span>
+    </button>
+    <button type="button" disabled aria-disabled="true" class="flex flex-col items-center gap-1 text-xs text-text-muted opacity-50 cursor-not-allowed">
+      {% include "ui/icons/calendar.svg" %}
+      <span>来店記録</span>
+    </button>
+    <button type="button" disabled aria-disabled="true" class="flex flex-col items-center gap-1 text-xs text-text-muted opacity-50 cursor-not-allowed">
+      {% include "ui/icons/link.svg" %}
+      <span>マッチング</span>
+    </button>
+  </nav>
+
+  <div x-data="{ show: false, message: '', type: 'success' }">
+    {% block toast %}{% endblock %}
+  </div>
+</div>
+{% endblock %}
