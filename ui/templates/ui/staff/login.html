@@ -1,0 +1,39 @@
+{% extends "ui/base.html" %}
+{% load static %}
+
+{% block title %}ログイン{% endblock %}
+
+{% block body %}
+<div class="min-h-screen flex items-center justify-center p-5">
+  <div class="w-full max-w-sm bg-bg-surface rounded-md shadow-sm p-8 border border-border-default">
+    <h1 class="text-xl font-semibold text-center text-text-primary mb-6">Shisha CRM</h1>
+
+    {% if form.non_field_errors %}
+      <div class="bg-error-subtle text-error rounded-sm p-3 mb-4 text-sm">
+        {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <label for="id_token" class="block text-sm font-medium text-text-secondary mb-2">QR コード</label>
+      {{ form.token }}
+      {% if form.token.errors %}
+        <p class="text-error text-sm mt-2">{{ form.token.errors.0 }}</p>
+      {% endif %}
+      <button
+        type="submit"
+        class="mt-4 w-full py-3 rounded-sm bg-accent text-text-inverse font-medium hover:bg-accent-hover active:bg-accent-active transition-colors"
+      >
+        ログイン
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'ui/js/qr-auto-login.js' %}"></script>
+{% endblock %}
