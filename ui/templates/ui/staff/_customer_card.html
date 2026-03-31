@@ -1,0 +1,28 @@
+<a
+  href="/s/customers/{{ customer.id }}/session/"
+  class="block rounded-md border border-border-default bg-bg-surface p-4 shadow-sm hover:border-accent transition-colors"
+>
+  <div class="flex items-start justify-between gap-3 mb-2">
+    <span class="text-[17px] font-medium text-text-primary truncate">{{ customer.name }}</span>
+    {% if customer.segment == "new" %}
+      <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent-subtle text-accent badge-new">{{ customer.segment_display }}</span>
+    {% elif customer.segment == "repeat" %}
+      <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-subtle text-warning-dark badge-repeat">{{ customer.segment_display }}</span>
+    {% elif customer.segment == "regular" %}
+      <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-subtle text-success badge-regular">{{ customer.segment_display }}</span>
+    {% else %}
+      <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-bg-inset text-text-secondary badge-{{ customer.segment }}">{{ customer.segment_display }}</span>
+    {% endif %}
+  </div>
+  <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-text-secondary">
+    <span>来店 {{ customer.visit_count }} 回</span>
+    {% if customer.last_visited_at %}
+      <span>最終来店 {{ customer.last_visited_at|date:"Y/m/d" }}</span>
+    {% else %}
+      <span>来店記録なし</span>
+    {% endif %}
+  </div>
+  {% if customer.open_task_count > 0 %}
+    <p class="mt-2 text-sm text-accent font-medium">未消化タスク {{ customer.open_task_count }} 件</p>
+  {% endif %}
+</a>

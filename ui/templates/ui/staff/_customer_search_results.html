@@ -1,0 +1,10 @@
+{% if not has_query %}
+{% elif customers %}
+  <ul class="flex flex-col gap-2">
+    {% for customer in customers %}
+      <li>{% include "ui/staff/_customer_card.html" %}</li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="text-center text-text-secondary text-sm py-6">見つかりませんでした</p>
+{% endif %}
