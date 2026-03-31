@@ -46,6 +46,22 @@ fi
 
 echo ""
 
+# Step 1.5: Tailwind CSS build must not drift from committed output.css
+echo "--- Step 1.5: Tailwind CSS build check ---"
+if command -v npm &>/dev/null; then
+  npm run css:build --prefix "$WORKDIR" 2>&1
+  if git diff --exit-code ui/static/ui/css/output.css >/dev/null 2>&1; then
+    echo "  OK (output.css is up to date)"
+  else
+    echo "  FAIL (output.css is stale — run npm run css:build)"
+    ERRORS=$((ERRORS + 1))
+  fi
+else
+  echo "  SKIP (npm not available)"
+fi
+
+echo ""
+
 # Step 2: Test bundle
 echo "--- Step 2: Tests ---"
 

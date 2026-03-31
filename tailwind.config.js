@@ -3,6 +3,9 @@ module.exports = {
   content: [
     "./ui/templates/**/*.html",
     "./ui/static/ui/js/**/*.js",
+    // Widget attrs (forms.py) and SVG partials (icons/*.svg) are outside HTML/JS globs.
+    "./ui/**/*.py",
+    "./ui/templates/**/*.svg",
   ],
   theme: {
     extend: {
