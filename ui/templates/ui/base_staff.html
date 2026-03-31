@@ -25,20 +25,20 @@
   <nav class="h-[56px] shrink-0 flex items-center justify-around border-t border-border-default bg-bg-surface">
     <a
       href="/s/customers/"
-      class="flex flex-col items-center gap-1 text-xs {% if active_tab == 'customers' %}text-accent font-medium{% else %}text-text-muted{% endif %}"
+      class="flex flex-col items-center gap-1 text-xs {% if active_tab == 'customers' %}text-accent font-medium{% else %}text-text-secondary{% endif %}"
     >
       {% include "ui/icons/users.svg" %}
       <span>顧客</span>
     </a>
-    <button type="button" disabled aria-disabled="true" class="flex flex-col items-center gap-1 text-xs text-text-muted opacity-50 cursor-not-allowed">
+    <button type="button" disabled aria-disabled="true" class="flex flex-col items-center gap-1 text-xs text-text-muted cursor-not-allowed">
       {% include "ui/icons/message-circle.svg" %}
       <span>接客</span>
     </button>
-    <button type="button" disabled aria-disabled="true" class="flex flex-col items-center gap-1 text-xs text-text-muted opacity-50 cursor-not-allowed">
+    <button type="button" disabled aria-disabled="true" class="flex flex-col items-center gap-1 text-xs text-text-muted cursor-not-allowed">
       {% include "ui/icons/calendar.svg" %}
       <span>来店記録</span>
     </button>
-    <button type="button" disabled aria-disabled="true" class="flex flex-col items-center gap-1 text-xs text-text-muted opacity-50 cursor-not-allowed">
+    <button type="button" disabled aria-disabled="true" class="flex flex-col items-center gap-1 text-xs text-text-muted cursor-not-allowed">
       {% include "ui/icons/link.svg" %}
       <span>マッチング</span>
     </button>
