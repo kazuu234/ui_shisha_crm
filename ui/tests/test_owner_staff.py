@@ -59,6 +59,15 @@ class OwnerStaffViewsTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.url.startswith("/o/login/"))
 
+    def test_deactivated_staff_cannot_access_staff_ui(self):
+        """StaffRequiredMixin の is_active ガード回帰テスト。"""
+        self.client.force_login(self.staff)
+        self.staff.is_active = False
+        self.staff.save(update_fields=["is_active"])
+        response = self.client.get("/s/customers/")
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith("/s/login/"))
+
     def test_staff_list_staff_redirect(self):
         self.client.force_login(self.staff)
         response = self.client.get(reverse("owner:staff-list"))
