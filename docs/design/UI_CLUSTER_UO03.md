@@ -98,23 +98,31 @@ ui/
 
 **import パスについて**: コア層は別リポジトリ（別 Django app）として管理されている場合がある。本設計書では `from core.services.visit import VisitService` のような統一的な記法を使用するが、実際の import パスはコア層のパッケージ構造に依存する。実装時にコア層の `__init__.py` や実際のモジュール配置を確認すること。
 
-### VisitService
+### Visit モデル直接操作（VisitService 不使用）
 
-| メソッド | 引数 | 返り値 | 例外 |
-|---------|------|--------|------|
-| `update_visit(visit_id, **fields)` | `UUID, **kwargs` | `Visit` | `BusinessError(visit.not_found)` |
-| `delete_visit(visit_id)` | `UUID` | `None` | `BusinessError(visit.not_found)` |
+> **注意**: コア層に `VisitService.update_visit()` / `VisitService.delete_visit()` は存在しない。
+> 来店記録の更新・削除は Django ModelForm の `form.save()` およびモデルの `soft_delete()` メソッドで直接行う。
 
-**`update_visit` が受け付けるフィールド**: `visited_at`, `conversation_memo`。`customer_id` は immutable（C-04 仕様: `visit.customer_immutable`）。
+| 操作 | 方法 | 備考 |
+|------|------|------|
+| 更新 | `form.save()` （ModelForm） | `visited_at`, `conversation_memo` のみ編集可。`customer_id` は immutable（C-04 仕様） |
+| 論理削除 | `visit.soft_delete()` | `is_deleted=True`, `deleted_at` 設定。signal 経由で `visit_count` と `segment` が自動再計算される |
 
-**`delete_visit` の動作**: 論理削除（`is_deleted=True`, `deleted_at` 設定）。signal 経由で `visit_count` と `segment` が自動再計算される。
+**`customer` / `staff` は immutable**: フォームに含めない。テンプレート側で読み取り専用表示のみ。
 
 ### SegmentService
 
 | メソッド | 引数 | 返り値 | 備考 |
 |---------|------|--------|------|
 | `bulk_recalculate_segments(store)` | `Store` | `int`（変更件数） | 全顧客のセグメントを一括再計算。定数回クエリで N+1 なし |
-| `determine_segment(visit_count, thresholds)` | `int, list[dict]` | `str` | visit_count と閾値リストからセグメント名を判定。プレビュー等で DB 更新なしに判定する場合に使用。**UI 側でのロジック複製は禁止** |
+| `_determine_segment(visit_count, thresholds)` | `int, list[dict]` | `str` | **private メソッド**。visit_count と閾値リストからセグメント名を判定。プレビュー等で DB 更新なしに判定する場合に使用。**UI 側でのロジック複製は禁止**。⚠️ 現状 private のため UI から直接呼べない。tech debt として公開 API 化を要望中（下記注記参照） |
+
+> **⚠️ Tech Debt: `_determine_segment` の可視性**
+> コア層では `_determine_segment()` は private メソッド（アンダースコア prefix）として実装されている。
+> UI のセグメントプレビュー機能（§4.5 SegmentSettingsView の HTMX プレビュー）がこのメソッドを必要とするが、
+> private メソッドを外部から呼ぶのは Python の慣例に反する。
+> **現状の実装方針**: 実装時は `SegmentService._determine_segment()` を直接呼び出す（動作はする）。
+> コア層チームに公開 API 化（`determine_segment()` として公開）を要望し、公開後にリファクタリングする。
 
 ### SegmentThreshold モデル
 
@@ -388,8 +396,6 @@ class VisitEditForm(forms.ModelForm):
 from django.views import View
 from django.shortcuts import get_object_or_404, redirect, render
 
-from core.exceptions import BusinessError
-from core.services.visit import VisitService
 from ui.owner.forms.visit import VisitEditForm
 
 
@@ -422,19 +428,8 @@ class VisitEditView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
                 "active_sidebar": "visits",
             })
 
-        # Service 経由で更新（BusinessError をキャッチ）
-        try:
-            VisitService.update_visit(
-                visit_id=visit.pk,
-                **form.cleaned_data,
-            )
-        except BusinessError as e:
-            form.add_error(None, str(e))
-            return render(request, self.template_name, {
-                "form": form,
-                "visit": visit,
-                "active_sidebar": "visits",
-            })
+        # ModelForm.save() で直接更新（VisitService 不使用）
+        form.save()
 
         # トースト用メッセージをセッションに保存
         request.session["toast"] = {
@@ -447,16 +442,15 @@ class VisitEditView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
 
 **customer / staff は読み取り専用**: フォームには `visited_at` と `conversation_memo` のみ含む。テンプレート側で `visit.customer.name` と `visit.staff.display_name` を読み取り専用で表示する。C-04 仕様で `customer_id` は immutable、`staff` も `VisitUpdateRequest` に含まれないため。
 
-**BusinessError 処理**: `VisitService.update_visit()` が `BusinessError(visit.not_found)` を送出する可能性がある（レース条件で来店記録が削除された場合等）。キャッチして `form.add_error(None, str(e))` で non_field_errors としてフォームに表示する。UO-02 CustomerEditView と同一パターン。
+**VisitService 不使用の理由**: コア層に `VisitService.update_visit()` は存在しない。来店記録の更新は ModelForm の `form.save()` で直接行う。バリデーションは Django form 層で完結する。
 
 ### 4.4 VisitDeleteView（Slice 1）
 
 ```python
 from django.views import View
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect
 
-from core.exceptions import BusinessError
-from core.services.visit import VisitService
+from core.models import Visit
 
 
 class VisitDeleteView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
@@ -468,15 +462,8 @@ class VisitDeleteView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
             pk=self.kwargs["pk"],
         )
 
-        try:
-            VisitService.delete_visit(visit_id=visit.pk)
-        except BusinessError as e:
-            # 削除失敗時: 来店一覧にリダイレクト + エラートースト
-            request.session["toast"] = {
-                "message": str(e),
-                "type": "error",
-            }
-            return redirect("/o/visits/")
+        # モデルの soft_delete() で論理削除（VisitService 不使用）
+        visit.soft_delete()
 
         # 成功: 来店一覧にリダイレクト + トースト
         request.session["toast"] = {
@@ -488,9 +475,9 @@ class VisitDeleteView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
 
 **削除確認ダイアログ**: テンプレート側で Alpine.js モーダルを実装する（§5.3 参照）。VisitDeleteView は POST のみ受け付け、GET は提供しない。確認ダイアログで「削除」を押した時に POST が送信される。
 
-**BusinessError 処理**: `VisitService.delete_visit()` がエラーを送出した場合（レース条件等）、エラートーストを表示して来店一覧にリダイレクトする。422 ではなくリダイレクト + トーストパターンを使用（削除操作は HTMX ではなく通常の POST/Redirect/GET）。
+**VisitService 不使用の理由**: コア層に `VisitService.delete_visit()` は存在しない。論理削除は Visit モデルの `soft_delete()` メソッドで直接行う。`soft_delete()` は `is_deleted=True`, `deleted_at` を設定する。
 
-**signal による自動再計算**: `VisitService.delete_visit()` が論理削除すると、C-04 の signal ハンドラが `SegmentService.recalculate_segment(customer)` を自動実行する。UI View から明示的に再計算を呼ぶ必要はない。
+**signal による自動再計算**: `visit.soft_delete()` が論理削除すると、C-04 の signal ハンドラが `SegmentService.recalculate_segment(customer)` を自動実行する。UI View から明示的に再計算を呼ぶ必要はない。
 
 ### 4.5 SegmentSettingsView（Slice 2）
 
@@ -1680,3 +1667,5 @@ Feature: Owner セグメント閾値設定
 | 2026-03-31 | Codex (gpt-5.4 high) R2 | F-13: Alpine テストを TestClient → smoke test に移動 | Medium | #25 をサーバー検証に変更。smoke test #5-6 を追加 |
 | 2026-04-01 | Codex (gpt-5.4 high) R3 | F-14: Staff import パス不一致 | Medium | `from core.models import Staff` に統一 |
 | 2026-04-01 | Codex (gpt-5.4 high) R3 | F-15: smoke test 番号重複 | Low | #5-6 + #7-9 に再採番 |
+| 2026-04-01 | Owner UI Closure Audit (Issue #25) | F-01: `VisitService.update_visit()`/`delete_visit()` がコア層に存在しない | High | §3 契約を `form.save()` / `visit.soft_delete()` に修正。§4.3/§4.4 View コードから VisitService import と BusinessError try/except を除去 |
+| 2026-04-01 | Owner UI Closure Audit (Issue #25) | F-03: `SegmentService.determine_segment()` は private `_determine_segment()` | Medium | §3 契約のメソッド名を `_determine_segment()` に修正。Tech Debt 注記を追加（公開 API 化を要望中） |

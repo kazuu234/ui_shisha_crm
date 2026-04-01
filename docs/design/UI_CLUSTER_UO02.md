@@ -64,13 +64,16 @@ ui/
 
 **import パスについて**: コア層は別リポジトリ（別 Django app）として管理されている場合がある。本設計書では `from core.services.customer import CustomerService` のような統一的な記法を使用するが、実際の import パスはコア層のパッケージ構造に依存する。実装時にコア層の `__init__.py` や実際のモジュール配置を確認すること。
 
-### CustomerService
+### Customer モデル直接操作（CustomerService.update_customer 不使用）
 
-| メソッド | 引数 | 返り値 | 例外 |
-|---------|------|--------|------|
-| `update_customer(customer_id, **fields)` | `UUID, **kwargs` | `Customer` | `BusinessError(customer.not_found)` |
+> **注意**: コア層に `CustomerService.update_customer()` は存在しない。
+> 顧客情報の更新は Django ModelForm の `form.save()` で直接行う。
 
-**`update_customer` が受け付けるフィールド**: `name`, `age`, `area`, `shisha_experience`, `line_id`, `memo`。
+| 操作 | 方法 | 備考 |
+|------|------|------|
+| 更新 | `form.save()` （ModelForm） | `name`, `age`, `area`, `shisha_experience`, `line_id`, `memo` を編集可 |
+
+**更新後の sync_tasks 呼び出し**: ヒアリング対象フィールド（`age`, `area`, `shisha_experience`）が変更された場合、View 側で `HearingTaskService.sync_tasks(customer)` を明示的に呼ぶ必要がある（§4.4 参照）。
 
 ### HearingTaskService
 
@@ -423,8 +426,6 @@ class CustomerEditForm(forms.ModelForm):
 from django.views import View
 from django.shortcuts import get_object_or_404, redirect, render
 
-from core.exceptions import BusinessError
-from core.services.customer import CustomerService
 from core.services.hearing_task import HearingTaskService
 from ui.owner.forms.customer import CustomerEditForm
 
@@ -466,19 +467,8 @@ class CustomerEditView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View)
             field: getattr(customer, field) for field in HEARING_FIELDS
         }
 
-        # Service 経由で更新（BusinessError をキャッチ）
-        try:
-            updated_customer = CustomerService.update_customer(
-                customer_id=customer.pk,
-                **form.cleaned_data,
-            )
-        except BusinessError as e:
-            form.add_error(None, str(e))
-            return render(request, self.template_name, {
-                "form": form,
-                "customer": customer,
-                "active_sidebar": "customers",
-            })
+        # ModelForm.save() で直接更新（CustomerService 不使用）
+        updated_customer = form.save()
 
         # ヒアリング対象フィールドが変更された場合のみ sync_tasks を呼ぶ
         new_hearing_values = {
@@ -498,7 +488,7 @@ class CustomerEditView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View)
 
 **ヒアリング対象フィールドの変更検知**: 更新前と更新後のヒアリング対象フィールドの値を比較し、変更がある場合のみ `sync_tasks()` を呼ぶ。これはコア層の `CustomerViewSet.perform_update()` と同一の責務を UI View で果たすもの（基本設計書 §6 O-CUSTOMER-EDIT に準拠）。
 
-**BusinessError 処理**: `CustomerService.update_customer()` が `BusinessError(customer.not_found)` を送出する可能性がある（レース条件で顧客が削除された場合等）。キャッチして `form.add_error(None, str(e))` で non_field_errors としてフォームに表示する。これは US-03 の同一パターンに準拠。
+**CustomerService 不使用の理由**: コア層に `CustomerService.update_customer()` は存在しない。顧客情報の更新は ModelForm の `form.save()` で直接行う。バリデーションは Django form 層で完結する。
 
 **トースト表示**: セッションに toast メッセージを保存し、リダイレクト先の詳細画面で表示・消去する。`CustomerDetailView.get_context_data()` で `self.request.session.pop("toast", None)` により取り出し後に自動削除。テンプレートは `base_owner.html` の `{% block toast %}` を使用する。
 
@@ -1102,3 +1092,5 @@ Feature: Owner 顧客管理
 - [2026-03-31] Codex 6回目レビュー (gpt-5.4): **94/100 PASS**。残 2 件を追加修正
   - F-20 (medium): `current_search` を `get_context_data()` で strip 正規化。queryset と context の検索文字列が一致するよう修正
   - F-21 (low): browser smoke test #12 にセグメントチップ個別解除の確認を追記
+- [2026-04-01] Owner UI Closure Audit (Issue #25) F-02 修正
+  - R-01 (high): `CustomerService.update_customer()` はコア層に存在しない。§3 契約を `form.save()` 直接操作に修正。§4.4 CustomerEditView から `CustomerService` import と try/except BusinessError を除去
