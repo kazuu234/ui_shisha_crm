@@ -79,27 +79,27 @@ ui/
 
 | メソッド | 引数 | 返り値 | 例外 |
 |---------|------|--------|------|
-| `get_candidates(row)` | `CsvImportRow` | `list[dict]` — `[{visit_id, customer{id, name}, visited_at, name_match_score}]` | `BusinessError(code='import.candidates_not_available')` — `pending_review` 以外 |
-| `confirm_match(row, visit_id)` | `CsvImportRow, UUID` | `CsvImportRow` (status='confirmed') | `BusinessError(code='import.row_not_pending')`, `BusinessError(code='import.row_already_processed')`, `BusinessError(code='import.direct_confirm_reject')`, `BusinessError(code='import.visit_not_in_candidates')`, `BusinessError(code='import.row_conflict')` |
-| `reject_match(row)` | `CsvImportRow` | `CsvImportRow` (status='rejected') | `BusinessError(code='import.row_not_pending')`, `BusinessError(code='import.row_already_processed')`, `BusinessError(code='import.direct_confirm_reject')`, `BusinessError(code='import.row_conflict')` |
+| `get_candidates(row, store)` | `CsvImportRow, Store` | `list[dict]` — `[{visit_id, customer{id, name}, visited_at, name_match_score}]` | `BusinessError(business_code='import.candidates_not_available')` — `pending_review` 以外 |
+| `confirm_row(row, visit_id, store, request=None)` | `CsvImportRow, UUID, Store, HttpRequest?` | `CsvImportRow` (status='confirmed') | `BusinessError(business_code='import.row_not_pending')`, `BusinessError(business_code='import.row_already_processed')`, `BusinessError(business_code='import.direct_confirm_reject')`, `BusinessError(business_code='import.visit_not_in_candidates')`, `BusinessError(business_code='import.row_conflict')` |
+| `reject_row(row, store, request=None)` | `CsvImportRow, Store, HttpRequest?` | `CsvImportRow` (status='rejected') | `BusinessError(business_code='import.row_not_pending')`, `BusinessError(business_code='import.row_already_processed')`, `BusinessError(business_code='import.direct_confirm_reject')`, `BusinessError(business_code='import.row_conflict')` |
 
 **get_candidates の仕様**:
-- `pending_review` 以外のステータスで呼ばれた場合は `BusinessError(code='import.candidates_not_available')` を raise する
+- `pending_review` 以外のステータスで呼ばれた場合は `BusinessError(business_code='import.candidates_not_available')` を raise する
 - 候補は毎回再計算（永続化しない）。同一 Store × 同一営業日の Visit から候補を算出する
 - 候補のソート順: `name_match_score` 降順。顧客名なし or 同スコアの場合は `customer.name` 昇順（五十音順）
 - `name_match_score`: CSV の customer_name と CRM Customer.name の部分一致度（0.0〜1.0）。顧客名が CSV にない場合は null
 
-**confirm_match の仕様**:
+**confirm_row の仕様**（旧名: `confirm_match`）:
 - `select_for_update` で排他制御。`visit_id` がその時点の候補集合に含まれるか検証する
 - 同時操作の場合、先行が勝ち、後続は `import.row_conflict` (409) エラー
 
-**reject_match の仕様**:
+**reject_row の仕様**（旧名: `reject_match`）:
 - `select_for_update` で排他制御。ステータスを `rejected` に更新する
 - 同時操作の場合、先行が勝ち、後続は `import.row_conflict` (409) エラー
 
 ### BusinessError コード一覧（UI が処理するもの）
 
-UI は MatchingService を直接呼び出す（コア層 API エンドポイント経由ではない）ため、BusinessError を catch して処理する。C-06 が定義する HTTP ステータス（400, 409）はコア層 API 用であり、UI View では BusinessError の `code` でメッセージを分岐する。
+UI は MatchingService を直接呼び出す（コア層 API エンドポイント経由ではない）ため、BusinessError を catch して処理する。C-06 が定義する HTTP ステータス（400, 409）はコア層 API 用であり、UI View では BusinessError の `business_code` でメッセージを分岐する。
 
 **エラー処理方針（View 種別ごと）**:
 
@@ -294,7 +294,7 @@ class MatchingConfirmForm(forms.Form):
     visit_id = forms.UUIDField()
 ```
 
-**シンプルな理由**: confirm 操作のバリデーション（visit_id が候補集合に含まれるか）は `MatchingService.confirm_match()` が担う。Form はリクエストボディの型チェックのみ。
+**シンプルな理由**: confirm 操作のバリデーション（visit_id が候補集合に含まれるか）は `MatchingService.confirm_row()` が担う。Form はリクエストボディの型チェックのみ。
 
 ## 6. View 定義
 
@@ -373,7 +373,7 @@ class MatchingCandidatesView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin,
         )
 
         try:
-            raw_candidates = MatchingService.get_candidates(row)
+            raw_candidates = MatchingService.get_candidates(row, self.store)
         except BusinessError:
             return HttpResponseBadRequest("候補を取得できません")
 
@@ -397,7 +397,7 @@ class MatchingCandidatesView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin,
 
 **BusinessError の処理**: `import.candidates_not_available` は UI 上ありえない（pending_review のみ表示するため）。発生した場合は 400 テキストで返す。
 
-**候補の毎回再計算**: `MatchingService.get_candidates(row)` は候補を永続化せず毎回再計算する（C-06 設計に準拠）。
+**候補の毎回再計算**: `MatchingService.get_candidates(row, self.store)` は候補を永続化せず毎回再計算する（C-06 設計に準拠）。
 
 **候補データの flat 化**: C-06 の `get_candidates()` はネストされた dict `{visit_id, customer{id, name}, visited_at, name_match_score}` を返す。テンプレートでの `{{ candidate.customer.name }}` のような dict ネストアクセスは Django テンプレートで動作するが、可読性と明示性のため View で flat 化する（`customer_name`, `customer_id` として展開）。
 
@@ -442,10 +442,10 @@ class MatchingConfirmView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin, Vi
         visit_id = form.cleaned_data["visit_id"]
 
         try:
-            MatchingService.confirm_match(row, visit_id)
+            MatchingService.confirm_row(row, visit_id, self.store, request=request)
         except BusinessError as e:
             # エラーメッセージをトーストで表示し、行はそのまま残す
-            message = ERROR_MESSAGES.get(e.code, "確定に失敗しました")
+            message = ERROR_MESSAGES.get(e.business_code, "確定に失敗しました")
             response = HttpResponse(status=422)
             response["HX-Trigger"] = (
                 '{"showToast": {"message": "' + message + '", "type": "error"}}'
@@ -483,9 +483,9 @@ class MatchingRejectView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin, Vie
         )
 
         try:
-            MatchingService.reject_match(row)
+            MatchingService.reject_row(row, self.store, request=request)
         except BusinessError as e:
-            message = ERROR_MESSAGES.get(e.code, "却下に失敗しました")
+            message = ERROR_MESSAGES.get(e.business_code, "却下に失敗しました")
             response = HttpResponse(status=422)
             response["HX-Trigger"] = (
                 '{"showToast": {"message": "' + message + '", "type": "error"}}'
@@ -722,9 +722,9 @@ Feature: 会計後マッチング（US-04 S1）
 - US-01 S1 → US-04 S1: `base_staff.html` の BottomTab に「マッチング」タブが `<a>` リンクとして存在するか
 - US-01 S1 → US-04 S1: `LoginRequiredMixin`, `StaffRequiredMixin`, `StoreMixin` が全 View で正しく適用されているか
 - C-06 → US-04 S1: `CsvImportRow.objects.for_store(store)` が正しくストアスコープを適用しているか
-- C-06 → US-04 S1: `MatchingService.get_candidates(row)` の返り値が candidates テンプレートで正しく描画されるか
-- C-06 → US-04 S1: `MatchingService.confirm_match(row, visit_id)` のエラーコードが View の ERROR_MESSAGES マッピングで網羅されているか
-- C-06 → US-04 S1: `MatchingService.reject_match(row)` のエラーコードが View の ERROR_MESSAGES マッピングで網羅されているか
+- C-06 → US-04 S1: `MatchingService.get_candidates(row, self.store)` の返り値が candidates テンプレートで正しく描画されるか
+- C-06 → US-04 S1: `MatchingService.confirm_row(row, visit_id, store, request)` のエラーコードが View の ERROR_MESSAGES マッピングで網羅されているか
+- C-06 → US-04 S1: `MatchingService.reject_row(row, store, request)` のエラーコードが View の ERROR_MESSAGES マッピングで網羅されているか
 - confirm/reject のトースト表示が `base_staff.html` の Toast コンポーネントと連携するか
 - HTMX CSRF 自動付与（`base.html` の `htmx:configRequest`）が PATCH リクエストに適用されるか
 - 422 swap 許可（`base.html` の `htmx:beforeSwap`）+ `HX-Reswap: none` によるエラー時の DOM 変更抑止が正しく動作するか
@@ -750,3 +750,7 @@ Feature: 会計後マッチング（US-04 S1）
   - F-09 (medium): 当日判定が `date.today()` でタイムゾーン境界問題。`timezone.localdate()` に変更し、日付境界テスト 5a を追加
   - F-10 (medium): candidates の 400 防御コードテストがレスポンス本文と HX-Trigger 非付与を検証していない。テスト 19, 19a, 19b を強化
 - [2026-03-31] Codex 5回目レビュー (gpt-5.4): **100/100 PASS**
+- [2026-04-01] orchestrator 再設計依頼（Issue #21 経由）: コア層実態との乖離修正
+  - R-01 (high): `MatchingService` メソッド名・シグネチャを実態に合わせて修正: `confirm_match` → `confirm_row(row, visit_id, store, request=None)`, `reject_match` → `reject_row(row, store, request=None)`, `get_candidates(row)` → `get_candidates(row, store)`
+  - R-02 (high): `BusinessError` 属性アクセスを `.business_code` / `.detail` に修正（`.code` は `.business_code`、フォールバックは `.detail`）
+  - R-03 (medium): Closure audit チェックリストの MatchingService メソッド名を更新

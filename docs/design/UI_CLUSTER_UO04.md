@@ -49,11 +49,11 @@
 - コア層 C-06 S2 完了（`MatchingService` が動作）
 
 **postcondition:**
-- 行一覧画面の「マッチング実行」ボタンを有効化（`matching_enabled=True` に変更）→ POST → `MatchingService.execute_matching(csv_import)` → マッチング管理画面 `/o/imports/<id>/matching/` にリダイレクト + トースト（結果サマリー）
+- 行一覧画面の「マッチング実行」ボタンを有効化（`matching_enabled=True` に変更）→ POST → `MatchingService.run_matching(csv_import, store, request)` → マッチング管理画面 `/o/imports/<id>/matching/` にリダイレクト + トースト（結果サマリー）
 - `/o/imports/<id>/matching/` で `pending_review` の行一覧が表示される
 - 各行クリック → HTMX で候補顧客一覧を遅延ロード（N+1 回避。C-06 仕様準拠：候補は毎回再計算、永続化しない）
-- 候補選択 → 「確定」ボタン → HTMX PATCH → `MatchingService.confirm_match(row, visit_id)` → confirmed + matched_visit 設定 → 行が一覧から消える
-- 「却下」ボタン → HTMX PATCH → `MatchingService.reject_match(row)` → rejected → 行が一覧から消える
+- 候補選択 → 「確定」ボタン → HTMX PATCH → `MatchingService.confirm_row(row, visit_id, store, request)` → confirmed + matched_visit 設定 → 行が一覧から消える
+- 「却下」ボタン → HTMX PATCH → `MatchingService.reject_row(row, store, request)` → rejected → 行が一覧から消える
 - `pending_review` 行がない場合「マッチ待ちの明細はありません」表示
 - 確定/却下操作後にトースト表示
 - Sidebar の「Airレジ連携」がアクティブ状態（`active_sidebar = "imports"`）
@@ -113,7 +113,6 @@ ui/
 | `status` | CharField (`completed` / `failed`) | インポート結果。completed = 0 件以上正常処理済み（全件重複スキップ含む）。failed = 全グループ不正 |
 | `row_count` | PositiveIntegerField | 正常に処理された取引グループ数（= CsvImportRow 件数） |
 | `error_message` | JSONField (nullable) | スキップした取引No・元 CSV 行番号・エラー内容の配列。JSON スキーマは下記参照 |
-| `uploaded_by` | ForeignKey(Staff) | アップロード実行者 |
 | `store` | ForeignKey(Store) | 店舗スコープ |
 | `created_at` | DateTimeField | 作成日時 |
 
@@ -163,41 +162,42 @@ C-06 は `error_message` の具体的な JSON 構造を定義していない。U
 
 | メソッド | 引数 | 返り値 | 例外 |
 |---------|------|--------|------|
-| `upload_csv(store, file, uploaded_by)` | `Store, UploadedFile, Staff` | `CsvImport` | `BusinessError(code='import.invalid_header')`, `BusinessError(code='import.all_groups_invalid')` |
+| `upload_csv(file, store, request=None)` | `UploadedFile, Store, HttpRequest?` | `CsvImport` | `BusinessError(business_code='import.invalid_header')`, `BusinessError(business_code='import.all_groups_invalid')` |
 
 **upload_csv の仕様**:
 - CSV ファイルを同期でパース・バリデーション・CsvImportRow 作成する
+- **引数順序**: `file, store, request=None`（コア層実装に準拠。`uploaded_by` 引数は存在しない。`request` は監査ログ等の用途でオプション渡し）
 - 成功: `CsvImport` (status='completed', row_count >= 0) を返す。row_count=0 は全件重複スキップ時に発生しうる（C-06 仕様準拠）
-- ヘッダー不正: `BusinessError(code='import.invalid_header')` を raise（CsvImport 未作成）
-- 全取引グループ不正: `BusinessError(code='import.all_groups_invalid')` を raise（CsvImport.status='failed'）
+- ヘッダー不正: `BusinessError(business_code='import.invalid_header')` を raise（CsvImport 未作成）
+- 全取引グループ不正: `BusinessError(business_code='import.all_groups_invalid')` を raise（CsvImport.status='failed'）
 - 冪等キー（store_id + business_date + receipt_no）で既存行はスキップ
 
 ### MatchingService
 
 | メソッド | 引数 | 返り値 | 例外 |
 |---------|------|--------|------|
-| `execute_matching(csv_import)` | `CsvImport` | `dict` — `{auto_confirmed_count, pending_review_count, no_candidate_count, already_processed_count}` | `BusinessError(code='import.not_completed')` |
-| `get_candidates(row)` | `CsvImportRow` | `list[dict]` — `[{visit_id, customer{id, name}, visited_at, name_match_score}]` | `BusinessError(code='import.candidates_not_available')` |
-| `confirm_match(row, visit_id)` | `CsvImportRow, UUID` | `CsvImportRow` (status='confirmed') | `BusinessError` — 下記コード一覧参照 |
-| `reject_match(row)` | `CsvImportRow` | `CsvImportRow` (status='rejected') | `BusinessError` — 下記コード一覧参照 |
+| `run_matching(csv_import, store, request=None)` | `CsvImport, Store, HttpRequest?` | `dict` — `{auto_confirmed_count, pending_review_count, no_candidate_count, already_processed_count}` | `BusinessError(business_code='import.not_completed')` |
+| `get_candidates(row, store)` | `CsvImportRow, Store` | `list[dict]` — `[{visit_id, customer{id, name}, visited_at, name_match_score}]` | `BusinessError(business_code='import.candidates_not_available')` |
+| `confirm_row(row, visit_id, store, request=None)` | `CsvImportRow, UUID, Store, HttpRequest?` | `CsvImportRow` (status='confirmed') | `BusinessError` — 下記コード一覧参照 |
+| `reject_row(row, store, request=None)` | `CsvImportRow, Store, HttpRequest?` | `CsvImportRow` (status='rejected') | `BusinessError` — 下記コード一覧参照 |
 
-**execute_matching の仕様**:
-- CsvImport の status が 'completed' でない場合は `BusinessError(code='import.not_completed')` を raise
+**run_matching の仕様**（旧名: `execute_matching`）:
+- CsvImport の status が 'completed' でない場合は `BusinessError(business_code='import.not_completed')` を raise
 - validated 行のみ処理。pending_review/confirmed/rejected は already_processed_count に加算してスキップ
 - 再実行は安全（冪等）
 - レスポンスの 4 カウント合計 == CsvImport.row_count（invariant）
 
 **get_candidates の仕様**:
-- `pending_review` 以外のステータスで呼ばれた場合は `BusinessError(code='import.candidates_not_available')` を raise
+- `pending_review` 以外のステータスで呼ばれた場合は `BusinessError(business_code='import.candidates_not_available')` を raise
 - 候補は毎回再計算（永続化しない）。同一 Store × 同一営業日の Visit から候補を算出
 - 候補のソート順: `name_match_score` 降順。顧客名なし or 同スコアの場合は `customer.name` 昇順（五十音順）
 - `name_match_score`: CSV の customer_name と CRM Customer.name の部分一致度（0.0〜1.0）。顧客名が CSV にない場合は null
 
-**confirm_match の仕様**:
+**confirm_row の仕様**（旧名: `confirm_match`）:
 - `select_for_update` で排他制御。`visit_id` がその時点の候補集合に含まれるか検証
 - 同時操作の場合、先行が勝ち、後続は `import.row_conflict` エラー
 
-**reject_match の仕様**:
+**reject_row の仕様**（旧名: `reject_match`）:
 - `select_for_update` で排他制御。ステータスを `rejected` に更新
 - 同時操作の場合、先行が勝ち、後続は `import.row_conflict` エラー
 
@@ -291,9 +291,9 @@ class CsvUploadView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
 
         try:
             csv_import = ImportService.upload_csv(
-                store=self.store,
                 file=csv_file,
-                uploaded_by=request.user,
+                store=self.store,
+                request=request,
             )
         except BusinessError as e:
             # ヘッダー不正 / 全行不正 → 同画面でエラー表示
@@ -324,7 +324,7 @@ class CsvUploadView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
             "import.invalid_header": "CSV のヘッダーが不正です。「取引No」と「来店日」列が必要です。",
             "import.all_groups_invalid": "CSV の全データが不正です。日付フォーマットや取引No を確認してください。",
         }
-        return messages.get(error.code, f"インポートに失敗しました: {error.message}")
+        return messages.get(error.business_code, f"インポートに失敗しました: {error.detail}")
 ```
 
 **同期処理**: C-06 Stage 1 は CSV アップロード時に同期で処理が完了する設計。非同期処理・ポーリングは不要。
@@ -413,7 +413,7 @@ class MatchingExecuteView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, Vi
         )
 
         try:
-            result = MatchingService.execute_matching(csv_import)
+            result = MatchingService.run_matching(csv_import, self.store, request=request)
         except BusinessError as e:
             # status != completed の場合
             request.session["toast"] = {
@@ -518,7 +518,7 @@ class MatchingCandidatesView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin,
         )
 
         try:
-            raw_candidates = MatchingService.get_candidates(row)
+            raw_candidates = MatchingService.get_candidates(row, self.store)
         except BusinessError:
             return HttpResponseBadRequest("候補を取得できません")
 
@@ -541,7 +541,7 @@ class MatchingCandidatesView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin,
         })
 ```
 
-**候補の毎回再計算**: `MatchingService.get_candidates(row)` は候補を永続化せず毎回再計算する（C-06 設計に準拠）。展開のたびに最新の候補が表示されるため、Visit の追加・更新・削除が反映される。
+**候補の毎回再計算**: `MatchingService.get_candidates(row, store)` は候補を永続化せず毎回再計算する（C-06 設計に準拠）。展開のたびに最新の候補が表示されるため、Visit の追加・更新・削除が反映される。
 
 **候補データの flat 化**: C-06 の `get_candidates()` はネストされた dict を返す。テンプレートでの可読性と明示性のため View で flat 化する（US-04 と同一パターン）。
 
@@ -587,10 +587,10 @@ class MatchingConfirmView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, Vi
         visit_id = form.cleaned_data["visit_id"]
 
         try:
-            MatchingService.confirm_match(row, visit_id)
+            MatchingService.confirm_row(row, visit_id, self.store, request=request)
         except BusinessError as e:
             # エラーメッセージをトーストで表示し、行はそのまま残す
-            message = ERROR_MESSAGES.get(e.code, "確定に失敗しました")
+            message = ERROR_MESSAGES.get(e.business_code, "確定に失敗しました")
             response = HttpResponse(status=422)
             response["HX-Trigger"] = (
                 '{"showToast": {"message": "' + message + '", "type": "error"}}'
@@ -629,9 +629,9 @@ class MatchingRejectView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, Vie
         )
 
         try:
-            MatchingService.reject_match(row)
+            MatchingService.reject_row(row, self.store, request=request)
         except BusinessError as e:
-            message = ERROR_MESSAGES.get(e.code, "却下に失敗しました")
+            message = ERROR_MESSAGES.get(e.business_code, "却下に失敗しました")
             response = HttpResponse(status=422)
             response["HX-Trigger"] = (
                 '{"showToast": {"message": "' + message + '", "type": "error"}}'
@@ -687,7 +687,7 @@ class MatchingConfirmForm(forms.Form):
     visit_id = forms.UUIDField()
 ```
 
-**シンプルな理由**: confirm 操作のバリデーション（visit_id が候補集合に含まれるか）は `MatchingService.confirm_match()` が担う。Form はリクエストボディの型チェックのみ。US-04 と同一パターン。
+**シンプルな理由**: confirm 操作のバリデーション（visit_id が候補集合に含まれるか）は `MatchingService.confirm_row()` が担う。Form はリクエストボディの型チェックのみ。US-04 と同一パターン。
 
 ## 6. テンプレート
 
@@ -1316,3 +1316,9 @@ urlpatterns = [
 - [2026-04-01] Codex レビュー 3回目: 88/100 CONDITIONAL。2 件を修正
   - F-10 (medium): /rows/ テンプレートの error_message 表示を csv_import.status で分岐。failed=「全件不正」、completed=「一部スキップ」
   - F-11 (medium): UI_BASIC_DESIGN.md の UO-04 postcondition を更新。completed=0件以上、failed の「エラー詳細」導線を追記
+- [2026-04-01] orchestrator 再設計依頼（Issue #21）: コア層実態との乖離修正。5 件を修正
+  - R-01 (critical): `ImportService.upload_csv` シグネチャを `upload_csv(file, store, request=None)` に修正（引数順序・uploaded_by 削除・request 追加）
+  - R-02 (critical): `CsvImport.uploaded_by` フィールドをモデル定義から削除（コア層に存在しない）
+  - R-03 (high): `BusinessError` 属性アクセスを `.business_code` / `.detail` に修正（`.code` / `.message` は存在しない）
+  - R-04 (high): `MatchingService` メソッド名・シグネチャを実態に合わせて修正: `execute_matching` → `run_matching(csv_import, store, request=None)`, `confirm_match` → `confirm_row(row, visit_id, store, request=None)`, `reject_match` → `reject_row(row, store, request=None)`, `get_candidates(row)` → `get_candidates(row, store)`
+  - R-05 (medium): UI_CLUSTER_US04.md にも同一の乖離があったため合わせて修正（MatchingService メソッド名・シグネチャ + BusinessError 属性）
