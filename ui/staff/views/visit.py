@@ -4,6 +4,7 @@ from datetime import date
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, render
 from django.views import View
+from django.views.generic import TemplateView
 
 from customers.models import Customer
 from visits.models import Visit
@@ -60,3 +61,26 @@ class VisitCreateView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin, View):
             }
         )
         return response
+
+
+class VisitListView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin, TemplateView):
+    template_name = "ui/staff/visit_list.html"
+    login_url = "/s/login/"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        customer = get_object_or_404(
+            Customer.objects.for_store(self.store),
+            pk=self.kwargs["pk"],
+        )
+        visits = (
+            Visit.objects.for_store(self.store)
+            .filter(customer=customer)
+            .select_related("staff")
+            .order_by("-visited_at", "-created_at")[:20]
+        )
+        context["customer"] = customer
+        context["visits"] = visits
+        context["active_tab"] = "customers"
+        context["session_url"] = f"/s/customers/{customer.pk}/session/"
+        return context

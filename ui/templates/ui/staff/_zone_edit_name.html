@@ -1,0 +1,48 @@
+{% load static %}
+
+<div id="zone-name" class="p-4">
+  {% if error %}
+    <div class="rounded-sm p-2 mb-2 bg-error-subtle text-error text-sm">
+      <p>{{ error }}</p>
+    </div>
+  {% endif %}
+
+  <div x-data="{ editing: false, val: '{{ customer.name|escapejs }}' }">
+    <div
+      x-show="!editing"
+      x-transition
+      class="cursor-pointer"
+      @click="editing = true; $nextTick(() => $refs.nameInput.focus())"
+    >
+      <span class="text-text-secondary text-sm block">{{ config.label }}</span>
+      <span class="font-medium text-text-primary text-[17px] block mt-0.5">{{ customer.name }}</span>
+      <span class="text-text-muted text-xs block mt-1">タップして編集 ▸</span>
+    </div>
+
+    <div x-show="editing" x-transition x-cloak class="mt-1" style="display: none;">
+      <label class="text-text-secondary text-sm">{{ config.label }}</label>
+      <input
+        type="text"
+        x-model="val"
+        x-ref="nameInput"
+        placeholder="{{ config.placeholder }}"
+        class="w-full border border-border-default rounded-sm p-3 mt-1 text-[17px] bg-bg-surface text-text-primary"
+      />
+      <div class="flex gap-2 mt-2">
+        <button
+          type="button"
+          hx-patch="/s/customers/{{ customer.id }}/edit/field/"
+          :hx-vals="JSON.stringify({field: 'name', value: val})"
+          hx-target="#zone-name"
+          hx-swap="outerHTML"
+          class="flex-1 py-2 rounded-md bg-accent text-text-inverse font-medium text-[17px]"
+        >
+          保存
+        </button>
+        <button type="button" @click="editing = false" class="px-4 py-2 rounded-md border border-border-default text-text-secondary text-sm">
+          キャンセル
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

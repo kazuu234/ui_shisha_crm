@@ -1,0 +1,48 @@
+{% load static %}
+
+<div id="zone-line_id" class="p-4">
+  {% if error %}
+    <div class="rounded-sm p-2 mb-2 bg-error-subtle text-error text-sm">
+      <p>{{ error }}</p>
+    </div>
+  {% endif %}
+
+  <div x-data="{ open: false, val: '{{ customer.line_id|default_if_none:""|escapejs }}' }">
+    <div
+      class="cursor-pointer"
+      @click="open = !open; if (open) $nextTick(() => $refs.lineIdInput.focus())"
+    >
+      <span class="text-text-secondary text-sm block">{{ config.label }}</span>
+      {% if customer.line_id %}
+        <span class="font-medium text-text-primary text-[17px] block mt-0.5 break-all">{{ customer.line_id }}</span>
+      {% else %}
+        <span class="text-text-muted text-xs block mt-1">タップして入力 ▸</span>
+      {% endif %}
+    </div>
+
+    <div x-show="open" x-transition x-cloak class="mt-2" style="display: none;">
+      <input
+        type="text"
+        x-model="val"
+        x-ref="lineIdInput"
+        placeholder="{{ config.placeholder }}"
+        class="w-full border border-border-default rounded-sm p-3 mt-1 text-[17px] bg-bg-surface text-text-primary"
+      />
+      <div class="flex gap-2 mt-2">
+        <button
+          type="button"
+          hx-patch="/s/customers/{{ customer.id }}/edit/field/"
+          :hx-vals="JSON.stringify({field: 'line_id', value: val})"
+          hx-target="#zone-line_id"
+          hx-swap="outerHTML"
+          class="flex-1 py-2 rounded-md bg-accent text-text-inverse font-medium text-[17px]"
+        >
+          保存
+        </button>
+        <button type="button" @click="open = false" class="px-4 py-2 rounded-md border border-border-default text-text-secondary text-sm">
+          キャンセル
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

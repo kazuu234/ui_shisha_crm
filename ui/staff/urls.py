@@ -3,6 +3,9 @@ from django.urls import path
 from ui.staff.views.auth import LoginView, LogoutView
 from ui.staff.views.customer import (
     CustomerCreateView,
+    CustomerDetailView,
+    CustomerEditFieldView,
+    CustomerEditView,
     CustomerSearchView,
     CustomerSelectView,
 )
@@ -12,7 +15,7 @@ from ui.staff.views.session import (
     SessionRecentVisitsFragmentView,
     SessionView,
 )
-from ui.staff.views.visit import VisitCreateView
+from ui.staff.views.visit import VisitCreateView, VisitListView
 
 app_name = "staff"
 
@@ -22,6 +25,14 @@ urlpatterns = [
     path("customers/", CustomerSelectView.as_view(), name="customers"),
     path("customers/search/", CustomerSearchView.as_view(), name="customer-search"),
     path("customers/new/", CustomerCreateView.as_view(), name="customer-create"),
+    path("customers/<uuid:pk>/", CustomerDetailView.as_view(), name="customer-detail"),
+    path("customers/<uuid:pk>/edit/", CustomerEditView.as_view(), name="customer-edit"),
+    path(
+        "customers/<uuid:pk>/edit/field/",
+        CustomerEditFieldView.as_view(),
+        name="customer-edit-field",
+    ),
+    path("customers/<uuid:pk>/visits/", VisitListView.as_view(), name="visit-list"),
     path("customers/<uuid:pk>/session/", SessionView.as_view(), name="session"),
     path(
         "customers/<uuid:pk>/session/header/",

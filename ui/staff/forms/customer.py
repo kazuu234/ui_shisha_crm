@@ -27,6 +27,60 @@ class CustomerCreateForm(forms.Form):
     )
 
 
+EDIT_FIELD_CHOICES = {
+    "name": None,
+    "age": "int",
+    "area": None,
+    "shisha_experience": ["none", "beginner", "intermediate", "advanced"],
+    "line_id": None,
+    "memo": None,
+}
+
+
+class CustomerEditFieldForm(forms.Form):
+    field = forms.CharField(max_length=50)
+    value = forms.CharField(required=False)
+
+    NULLABLE_FIELDS = {"age", "area", "shisha_experience", "line_id", "memo"}
+
+    def clean(self):
+        cleaned = super().clean()
+        field_name = cleaned.get("field")
+        value = cleaned.get("value")
+
+        if field_name not in EDIT_FIELD_CHOICES:
+            raise forms.ValidationError(f"無効なフィールド: {field_name}")
+
+        if field_name == "name":
+            if not value or not str(value).strip():
+                raise forms.ValidationError("名前を入力してください")
+            cleaned["value"] = str(value).strip()
+            return cleaned
+
+        if value is not None and isinstance(value, str):
+            value = value.strip()
+            cleaned["value"] = value
+
+        if field_name in self.NULLABLE_FIELDS and (value is None or value == ""):
+            cleaned["value"] = None
+            return cleaned
+
+        if field_name == "age":
+            try:
+                cleaned["value"] = int(value)
+            except (ValueError, TypeError):
+                raise forms.ValidationError("年齢は整数で入力してください") from None
+            if cleaned["value"] < 0 or cleaned["value"] > 150:
+                raise forms.ValidationError("年齢は 0〜150 の範囲で入力してください")
+            return cleaned
+
+        allowed = EDIT_FIELD_CHOICES[field_name]
+        if isinstance(allowed, list) and value not in allowed:
+            raise forms.ValidationError(f"無効な値: {value}")
+
+        return cleaned
+
+
 class CustomerFieldUpdateForm(forms.Form):
     field = forms.CharField(max_length=50)
     value = forms.CharField(max_length=255, required=False)
