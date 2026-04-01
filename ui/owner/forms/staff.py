@@ -9,7 +9,7 @@ _FIELD_CLASS = (
 class StaffCreateForm(forms.Form):
     display_name = forms.CharField(
         label="表示名",
-        max_length=150,
+        max_length=100,
         widget=forms.TextInput(
             attrs={
                 "autocomplete": "name",

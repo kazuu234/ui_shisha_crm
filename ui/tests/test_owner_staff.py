@@ -105,6 +105,21 @@ class OwnerStaffViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "表示名を入力してください")
 
+    def test_staff_create_display_name_too_long(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("owner:staff-create"),
+            {
+                "display_name": "あ" * 101,
+                "role": "staff",
+                "staff_type": "regular",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        form = response.context["form"]
+        self.assertIn("display_name", form.errors)
+        self.assertContains(response, form.errors["display_name"][0])
+
     def test_staff_create_qr_url_role(self):
         self.client.force_login(self.owner)
 
