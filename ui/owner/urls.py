@@ -13,7 +13,7 @@ from ui.owner.views.staff_mgmt import (
     StaffListView,
     StaffQRIssueView,
 )
-from ui.owner.views.stub import StubDashboardView
+from ui.owner.views.dashboard import DashboardView
 from ui.owner.views.segment import (
     SegmentApplyView,
     SegmentPreviewView,
@@ -39,7 +39,7 @@ app_name = "owner"
 urlpatterns = [
     path("login/", OwnerLoginView.as_view(), name="login"),
     path("logout/", OwnerLogoutView.as_view(), name="logout"),
-    path("dashboard/", StubDashboardView.as_view(), name="dashboard"),
+    path("dashboard/", DashboardView.as_view(), name="dashboard"),
     path("staff/", StaffListView.as_view(), name="staff-list"),
     path("staff/new/", StaffCreateView.as_view(), name="staff-create"),
     path("staff/<uuid:pk>/", StaffDetailView.as_view(), name="staff-detail"),

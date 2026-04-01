@@ -1,0 +1,31 @@
+{% extends "ui/base_owner.html" %}
+{% load static %}
+
+{% block page_title %}ダッシュボード{% endblock %}
+
+{% block content %}
+  <div class="flex items-center justify-end mb-6">
+    <select name="period"
+            hx-get="/o/dashboard/"
+            hx-target="#dashboard-charts"
+            hx-indicator="#dashboard-loading"
+            hx-push-url="true"
+            class="rounded-sm border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary">
+      {% for value, label in period_choices %}
+        <option value="{{ value }}" {% if value == current_period %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div id="dashboard-charts">
+    {% include "ui/owner/_dashboard_charts.html" %}
+  </div>
+
+  <div id="dashboard-loading" class="htmx-indicator">
+    <div class="text-center py-8 text-text-secondary">読み込み中...</div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'ui/js/charts.js' %}"></script>
+{% endblock %}

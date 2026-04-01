@@ -108,12 +108,12 @@ class OwnerAuthViewsTests(TestCase):
         self.assertEqual(response.url, "/o/login/")
         self.assertNotIn("_auth_user_id", self.client.session)
 
-    def test_dashboard_stub_owner(self):
+    def test_dashboard_owner_renders(self):
         self.client.force_login(self.owner)
         response = self.client.get("/o/dashboard/")
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "ui/owner/stub_dashboard.html")
-        self.assertContains(response, "準備中")
+        self.assertTemplateUsed(response, "ui/owner/dashboard.html")
+        self.assertContains(response, 'id="chart-daily"')
 
     def test_dashboard_stub_unauthenticated(self):
         response = self.client.get("/o/dashboard/")
