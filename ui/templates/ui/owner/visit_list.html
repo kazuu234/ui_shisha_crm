@@ -49,9 +49,15 @@
       x-transition
       class="pointer-events-auto fixed inset-x-0 bottom-6 z-[60] mx-auto flex max-w-md justify-center px-4"
     >
-      <div class="w-full rounded-md border border-success bg-success-subtle px-4 py-3 text-sm text-success shadow-lg">
-        {{ toast.message }}
-      </div>
+      {% if toast.type == "error" %}
+        <div class="w-full rounded-md border border-error bg-error-subtle px-4 py-3 text-sm text-error shadow-lg">
+          {{ toast.message }}
+        </div>
+      {% else %}
+        <div class="w-full rounded-md border border-success bg-success-subtle px-4 py-3 text-sm text-success shadow-lg">
+          {{ toast.message }}
+        </div>
+      {% endif %}
     </div>
   {% endif %}
 {% endblock %}

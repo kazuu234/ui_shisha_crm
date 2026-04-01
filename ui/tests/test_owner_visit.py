@@ -420,6 +420,21 @@ class OwnerVisitViewsTests(TestCase):
         response = self.client.get(reverse("owner:visit-edit", args=[ov.pk]))
         self.assertEqual(response.status_code, 404)
 
+    def test_visit_edit_save_error(self):
+        """form.save() が例外を送出した場合は non_field_errors として表示される"""
+        from unittest.mock import patch
+
+        with patch(
+            "ui.owner.forms.visit.VisitEditForm.save",
+            side_effect=Exception("保存エラー"),
+        ):
+            response = self.client.post(
+                reverse("owner:visit-edit", args=[self.visit.pk]),
+                {"visited_at": "2026-02-20", "conversation_memo": "x"},
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "保存エラー")
+
     # --- Delete #28–33 ---
 
     def test_visit_delete_post(self):
@@ -473,6 +488,19 @@ class OwnerVisitViewsTests(TestCase):
         )
         response = self.client.post(reverse("owner:visit-delete", args=[ov.pk]))
         self.assertEqual(response.status_code, 404)
+
+    def test_visit_delete_error(self):
+        """soft_delete() が例外を送出した場合、エラートースト + リダイレクト"""
+        from unittest.mock import patch
+
+        with patch.object(Visit, "soft_delete", side_effect=Exception("削除失敗")):
+            response = self.client.post(
+                reverse("owner:visit-delete", args=[self.visit.pk]),
+            )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("owner:visit-list"))
+        r2 = self.client.get(response.url)
+        self.assertContains(r2, "削除失敗")
 
     # --- Misc #34–39 ---
 

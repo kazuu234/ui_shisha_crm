@@ -178,7 +178,11 @@ class VisitEditView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
         if not form.is_valid():
             return self._render(request, form, visit)
 
-        form.save()
+        try:
+            form.save()
+        except Exception as exc:
+            form.add_error(None, str(exc))
+            return self._render(request, form, visit)
 
         request.session["toast"] = {
             "message": "来店記録を更新しました",
@@ -196,7 +200,14 @@ class VisitDeleteView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
             pk=self.kwargs["pk"],
         )
 
-        visit.soft_delete()
+        try:
+            visit.soft_delete()
+        except Exception as exc:
+            request.session["toast"] = {
+                "message": str(exc),
+                "type": "error",
+            }
+            return redirect(reverse("owner:visit-list"))
 
         request.session["toast"] = {
             "message": "来店記録を削除しました",
