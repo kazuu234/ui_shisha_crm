@@ -22,6 +22,14 @@
       <dd class="text-text-primary">{{ staff.get_role_display }}</dd>
       <dt class="text-text-secondary font-medium">種別</dt>
       <dd class="text-text-primary">{{ staff.get_staff_type_display }}</dd>
+      <dt class="text-text-secondary font-medium">状態</dt>
+      <dd class="text-text-primary">
+        {% if staff.is_active %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-subtle text-success">有効</span>
+        {% else %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-error-subtle text-error">無効</span>
+        {% endif %}
+      </dd>
       <dt class="text-text-secondary font-medium">作成日</dt>
       <dd class="text-text-primary">{{ staff.created_at|date:"Y/m/d H:i" }}</dd>
     </dl>

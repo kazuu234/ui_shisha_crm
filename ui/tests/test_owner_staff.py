@@ -1,5 +1,4 @@
 from datetime import timedelta
-from unittest import mock
 
 from django.test import TestCase
 from django.urls import reverse
@@ -141,6 +140,7 @@ class OwnerStaffViewsTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.staff.display_name)
+        self.assertContains(response, "有効")
         self.assertContains(response, f"#token={tok.token}")
 
     def test_staff_detail_inactive_404(self):
@@ -204,24 +204,37 @@ class OwnerStaffViewsTests(TestCase):
         self.assertTrue(self.owner.is_active)
 
     def test_deactivate_last_owner(self):
-        other_owner = Staff.objects.create_user(
+        """他にアクティブなオーナーがいれば無効化できる。最後の1人だけは拒否される。"""
+        target_owner = Staff.objects.create_user(
             store=self.store,
-            display_name="Other Owner",
+            display_name="Target Owner",
             role="owner",
             staff_type="owner",
         )
         self.client.force_login(self.owner)
-        with mock.patch(
-            "ui.owner.views.staff_mgmt._other_active_owner_count",
-            return_value=0,
-        ):
-            response = self.client.post(
-                reverse("owner:staff-deactivate", pk=other_owner.pk),
-            )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "最後のオーナーは無効化できません")
-        other_owner.refresh_from_db()
-        self.assertTrue(other_owner.is_active)
+        response_ok = self.client.post(
+            reverse("owner:staff-deactivate", pk=target_owner.pk),
+        )
+        self.assertEqual(response_ok.status_code, 302)
+        self.assertEqual(response_ok.url, reverse("owner:staff-list"))
+        target_owner.refresh_from_db()
+        self.assertFalse(target_owner.is_active)
+
+        last_owner = Staff.objects.create_user(
+            store=self.store,
+            display_name="Last Owner",
+            role="owner",
+            staff_type="owner",
+        )
+        self.owner.is_active = False
+        self.owner.save(update_fields=["is_active"])
+        response_block = self.client.post(
+            reverse("owner:staff-deactivate", pk=last_owner.pk),
+        )
+        self.assertEqual(response_block.status_code, 200)
+        self.assertContains(response_block, "最後のオーナーは無効化できません")
+        last_owner.refresh_from_db()
+        self.assertTrue(last_owner.is_active)
 
     def test_sidebar_active_staff(self):
         self.client.force_login(self.owner)
