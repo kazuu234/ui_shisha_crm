@@ -1,0 +1,60 @@
+{% load static %}
+
+{% if candidates %}
+  <div class="divide-y divide-border-default">
+    {% for candidate in candidates %}
+      <div class="py-2 flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <span class="font-medium">{{ candidate.customer_name }}</span>
+          <span class="text-text-secondary text-sm ml-2">{{ candidate.visited_at|date:"n/j" }}</span>
+          {% if candidate.name_match_score is not None %}
+            <span class="text-xs ml-1">
+              {% if candidate.name_match_score == 1.0 %}
+                <span class="text-success">完全一致</span>
+              {% elif candidate.name_match_score == 0.5 %}
+                <span class="text-warning">部分一致</span>
+              {% endif %}
+            </span>
+          {% endif %}
+        </div>
+        <button
+          type="button"
+          hx-patch="/s/matching/{{ row_id }}/confirm/"
+          hx-vals='{"visit_id": "{{ candidate.visit_id }}"}'
+          hx-target="#matching-row-{{ row_id }}"
+          hx-swap="outerHTML"
+          class="text-sm text-accent font-medium shrink-0"
+        >
+          確定
+        </button>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="mt-3 pt-3 border-t border-border-default">
+    <button
+      type="button"
+      hx-patch="/s/matching/{{ row_id }}/reject/"
+      hx-target="#matching-row-{{ row_id }}"
+      hx-swap="outerHTML"
+      class="text-sm text-error font-medium"
+    >
+      この明細を却下
+    </button>
+  </div>
+{% else %}
+  <div class="text-center text-text-muted py-4">
+    <p>候補が見つかりませんでした</p>
+  </div>
+  <div class="mt-3 pt-3 border-t border-border-default">
+    <button
+      type="button"
+      hx-patch="/s/matching/{{ row_id }}/reject/"
+      hx-target="#matching-row-{{ row_id }}"
+      hx-swap="outerHTML"
+      class="text-sm text-error font-medium"
+    >
+      この明細を却下
+    </button>
+  </div>
+{% endif %}

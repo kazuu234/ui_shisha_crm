@@ -1,0 +1,18 @@
+{% extends "ui/base_staff.html" %}
+{% load static %}
+
+{% block title %}マッチング{% endblock %}
+
+{% block page_title %}マッチング{% endblock %}
+
+{% block content %}
+<div class="bg-bg-surface shadow-sm rounded-md -m-5 min-h-[calc(100vh-44px-56px-40px)]">
+  {% for row in rows %}
+    {% include "ui/staff/_matching_row.html" with row=row %}
+  {% empty %}
+    <div class="text-center text-text-secondary py-8 px-5">
+      <p>マッチ待ちの明細はありません</p>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

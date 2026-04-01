@@ -131,7 +131,7 @@ class StaffAuthViewsTests(TestCase):
         self.client.force_login(self.staff)
         response = self.client.get("/s/customers/")
         html = response.content.decode()
-        self.assertEqual(html.count('aria-disabled="true"'), 3)
+        self.assertEqual(html.count('aria-disabled="true"'), 2)
 
     def test_topbar_logout_form(self):
         self.client.force_login(self.staff)

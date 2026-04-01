@@ -15,6 +15,12 @@ from ui.staff.views.session import (
     SessionRecentVisitsFragmentView,
     SessionView,
 )
+from ui.staff.views.matching import (
+    MatchingCandidatesView,
+    MatchingConfirmView,
+    MatchingRejectView,
+    MatchingView,
+)
 from ui.staff.views.visit import VisitCreateView, VisitListView
 
 app_name = "staff"
@@ -50,4 +56,20 @@ urlpatterns = [
         name="customer-field-update",
     ),
     path("visits/create/", VisitCreateView.as_view(), name="visit-create"),
+    path("matching/", MatchingView.as_view(), name="matching"),
+    path(
+        "matching/<uuid:row_id>/candidates/",
+        MatchingCandidatesView.as_view(),
+        name="matching-candidates",
+    ),
+    path(
+        "matching/<uuid:row_id>/confirm/",
+        MatchingConfirmView.as_view(),
+        name="matching-confirm",
+    ),
+    path(
+        "matching/<uuid:row_id>/reject/",
+        MatchingRejectView.as_view(),
+        name="matching-reject",
+    ),
 ]

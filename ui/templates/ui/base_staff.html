@@ -48,10 +48,13 @@
       {% include "ui/icons/calendar.svg" %}
       <span>来店記録</span>
     </button>
-    <button type="button" disabled aria-disabled="true" class="flex flex-col items-center gap-1 text-xs text-text-muted cursor-not-allowed">
+    <a
+      href="/s/matching/"
+      class="flex flex-col items-center gap-1 text-xs {% if active_tab == 'matching' %}text-accent font-medium{% else %}text-text-secondary{% endif %}"
+    >
       {% include "ui/icons/link.svg" %}
       <span>マッチング</span>
-    </button>
+    </a>
   </nav>
 
   <div
