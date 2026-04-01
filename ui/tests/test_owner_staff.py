@@ -1,11 +1,13 @@
 from datetime import timedelta
 
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import QRToken, Staff
 from tenants.models import Store, StoreGroup
+
+from ui.owner.views.staff_mgmt import StaffDeactivateView
 
 
 class OwnerStaffViewsTests(TestCase):
@@ -45,6 +47,14 @@ class OwnerStaffViewsTests(TestCase):
         self.assertNotContains(response, inactive.display_name)
 
     def test_staff_list_unauthenticated(self):
+        response = self.client.get(reverse("owner:staff-list"))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith("/o/login/"))
+
+    def test_deactivated_owner_cannot_access(self):
+        self.client.force_login(self.owner)
+        self.owner.is_active = False
+        self.owner.save(update_fields=["is_active"])
         response = self.client.get(reverse("owner:staff-list"))
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.url.startswith("/o/login/"))
@@ -204,7 +214,12 @@ class OwnerStaffViewsTests(TestCase):
         self.assertTrue(self.owner.is_active)
 
     def test_deactivate_last_owner(self):
-        """他にアクティブなオーナーがいれば無効化できる。最後の1人だけは拒否される。"""
+        """他にアクティブなオーナーがいれば無効化できる。最後の1人だけは拒否される。
+
+        オーナー領域のミックスインは is_active=False を即リダイレクトするため、
+        「他にアクティブなオーナーがいない」状態で別の active owner が POST する経路は
+        フルスタックでは成立しない。post() 本体のガードは RequestFactory で検証する。
+        """
         target_owner = Staff.objects.create_user(
             store=self.store,
             display_name="Target Owner",
@@ -220,21 +235,37 @@ class OwnerStaffViewsTests(TestCase):
         target_owner.refresh_from_db()
         self.assertFalse(target_owner.is_active)
 
-        last_owner = Staff.objects.create_user(
-            store=self.store,
-            display_name="Last Owner",
+        iso_group = StoreGroup.objects.create(name="Last Owner Iso Group")
+        iso_store = Store.objects.create(
+            store_group=iso_group, name="Last Owner Iso Store"
+        )
+        sole_owner = Staff.objects.create_user(
+            store=iso_store,
+            display_name="Sole Active Owner",
             role="owner",
             staff_type="owner",
         )
-        self.owner.is_active = False
-        self.owner.save(update_fields=["is_active"])
-        response_block = self.client.post(
-            reverse("owner:staff-deactivate", pk=last_owner.pk),
+        Staff.objects.filter(
+            store=iso_store, role="owner", is_active=True
+        ).exclude(pk=sole_owner.pk).update(is_active=False)
+        inactive_actor = Staff.objects.create_user(
+            store=iso_store,
+            display_name="Inactive Owner Actor",
+            role="owner",
+            staff_type="owner",
+            is_active=False,
         )
+        request = RequestFactory().post(
+            reverse("owner:staff-deactivate", pk=sole_owner.pk)
+        )
+        request.user = inactive_actor
+        view = StaffDeactivateView()
+        view.store = iso_store
+        response_block = view.post(request, sole_owner.pk)
         self.assertEqual(response_block.status_code, 200)
         self.assertContains(response_block, "最後のオーナーは無効化できません")
-        last_owner.refresh_from_db()
-        self.assertTrue(last_owner.is_active)
+        sole_owner.refresh_from_db()
+        self.assertTrue(sole_owner.is_active)
 
     def test_sidebar_active_staff(self):
         self.client.force_login(self.owner)

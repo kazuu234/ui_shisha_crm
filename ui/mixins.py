@@ -9,6 +9,9 @@ class StaffRequiredMixin(AccessMixin):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
+        if not request.user.is_active:
+            logout(request)
+            return redirect("/s/login/")
         if request.user.role not in ("staff", "owner"):
             logout(request)
             return redirect("/s/login/")
@@ -28,6 +31,9 @@ class OwnerRequiredMixin(AccessMixin):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
+        if not request.user.is_active:
+            logout(request)
+            return redirect("/o/login/")
         if request.user.role != "owner":
             return redirect("/s/customers/")
         return super().dispatch(request, *args, **kwargs)
