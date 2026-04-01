@@ -79,7 +79,18 @@ class CustomerEditForm(forms.ModelForm):
         return line_id or None
 
     def clean_memo(self):
+        """空文字列 → None に正規化（strip 後に判定）。"""
         memo = self.cleaned_data.get("memo")
-        if memo is None:
-            return ""
-        return memo.strip()
+        if memo is not None:
+            memo = memo.strip()
+        return memo or None
+
+    def save(self, commit=True):
+        """Customer.memo は DB 上 null 不可のため、None を空文字列に変換して保存する。"""
+        instance = super().save(commit=False)
+        if instance.memo is None:
+            instance.memo = ""
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
