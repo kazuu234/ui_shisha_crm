@@ -179,11 +179,6 @@ class SegmentApplyView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View)
             messages = getattr(e, "messages", None)
             msg = "; ".join(messages) if messages else str(e)
             return _preview_error_response(request, apply_error=msg)
-        except Exception as e:
-            return _preview_error_response(
-                request,
-                apply_error=str(e) or "予期しないエラーが発生しました。",
-            )
 
         AuditLogger.log(
             request,
