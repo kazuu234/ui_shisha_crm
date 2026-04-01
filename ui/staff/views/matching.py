@@ -15,6 +15,7 @@ from ui.mixins import StaffRequiredMixin, StoreMixin
 from ui.staff.forms.matching import MatchingConfirmForm
 
 ERROR_MESSAGES = {
+    "import.row_not_pending": "この明細は既に処理されています",
     "import.row_already_processed": "この明細は既に処理されています",
     "import.direct_confirm_reject": "この明細はまだマッチング未実行です",
     "import.visit_not_in_candidates": "選択した候補は無効です。再読み込みしてください",

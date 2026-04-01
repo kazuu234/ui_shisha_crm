@@ -485,11 +485,11 @@ class MatchingTests(TestCase):
 
     @patch("imports.services.MatchingService.confirm_row")
     def test_confirm_row_not_pending(self, mock_confirm):
-        """コアは import.row_not_pending を出さないが、既に処理済みと同じ文言で通知する。"""
+        """import.row_not_pending は既に処理済みと同じトースト文言にマッピングされる。"""
         today = timezone.localdate()
         row = self._row(business_date=today, status=CsvImportRow.STATUS_PENDING_REVIEW)
         mock_confirm.side_effect = BusinessError(
-            code="import.row_already_processed",
+            code="import.row_not_pending",
             message="x",
             status_code=400,
         )
@@ -633,7 +633,7 @@ class MatchingTests(TestCase):
         today = timezone.localdate()
         row = self._row(business_date=today, status=CsvImportRow.STATUS_PENDING_REVIEW)
         mock_reject.side_effect = BusinessError(
-            code="import.row_already_processed",
+            code="import.row_not_pending",
             message="x",
             status_code=400,
         )
