@@ -6,7 +6,13 @@ from ui.staff.views.customer import (
     CustomerSearchView,
     CustomerSelectView,
 )
-from ui.staff.views.stub import StubSessionView
+from ui.staff.views.session import (
+    CustomerFieldUpdateView,
+    SessionHeaderFragmentView,
+    SessionRecentVisitsFragmentView,
+    SessionView,
+)
+from ui.staff.views.visit import VisitCreateView
 
 app_name = "staff"
 
@@ -16,9 +22,21 @@ urlpatterns = [
     path("customers/", CustomerSelectView.as_view(), name="customers"),
     path("customers/search/", CustomerSearchView.as_view(), name="customer-search"),
     path("customers/new/", CustomerCreateView.as_view(), name="customer-create"),
+    path("customers/<uuid:pk>/session/", SessionView.as_view(), name="session"),
     path(
-        "customers/<uuid:pk>/session/",
-        StubSessionView.as_view(),
-        name="session",
+        "customers/<uuid:pk>/session/header/",
+        SessionHeaderFragmentView.as_view(),
+        name="session-header",
     ),
+    path(
+        "customers/<uuid:pk>/session/recent-visits/",
+        SessionRecentVisitsFragmentView.as_view(),
+        name="session-recent-visits",
+    ),
+    path(
+        "customers/<uuid:pk>/field/",
+        CustomerFieldUpdateView.as_view(),
+        name="customer-field-update",
+    ),
+    path("visits/create/", VisitCreateView.as_view(), name="visit-create"),
 ]

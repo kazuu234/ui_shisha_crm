@@ -204,14 +204,14 @@ class CustomerSelectAndSearchTests(TestCase):
         response = self.client.get("/s/customers/")
         self.assertContains(response, 'hx-get="/s/customers/search/"')
 
-    def test_session_stub_exists(self):
-        customer = Customer.objects.create(store=self.store, name="SessionStub")
+    def test_session_page_reachable(self):
+        customer = Customer.objects.create(store=self.store, name="SessionUser")
         url = f"/s/customers/{customer.pk}/session/"
         for user in (self.staff, self.owner):
             self.client.force_login(user)
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
-            self.assertTemplateUsed(response, "ui/staff/stub_session.html")
+            self.assertTemplateUsed(response, "ui/staff/session.html")
             self.assertEqual(response.context["active_tab"], "session")
 
     def test_create_customer_modal_error_no_double_nest(self):

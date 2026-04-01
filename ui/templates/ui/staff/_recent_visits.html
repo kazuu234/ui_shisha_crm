@@ -1,0 +1,17 @@
+{% load static %}
+
+{% for visit in recent_visits %}
+  <div class="block py-3 border-b border-border-default last:border-b-0">
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-primary">
+      <span>{{ visit.visited_at|date:"n/j" }}</span>
+      <span class="text-text-secondary">{{ visit.staff.display_name }}</span>
+    </div>
+    {% if visit.conversation_memo %}
+      <p class="mt-1 text-sm text-text-secondary truncate">{{ visit.conversation_memo|truncatechars:50 }}</p>
+    {% endif %}
+  </div>
+{% empty %}
+  <div class="py-6 text-center text-text-muted text-sm">
+    <p>来店記録はまだありません</p>
+  </div>
+{% endfor %}
