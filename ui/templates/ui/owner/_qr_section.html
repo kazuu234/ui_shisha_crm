@@ -1,0 +1,27 @@
+<div class="space-y-3">
+  <h2 class="text-[17px] font-bold text-text-primary">QR コード</h2>
+  {% if latest_qr_token %}
+    <p class="text-[15px] text-text-primary break-all">
+      URL:
+      <a href="{{ qr_url }}" target="_blank" rel="noopener noreferrer" class="text-accent underline hover:text-accent-hover">
+        {{ qr_url }}
+      </a>
+    </p>
+    <p class="text-sm text-text-secondary">
+      有効期限: {{ latest_qr_token.expires_at|date:"Y/m/d H:i" }}
+    </p>
+    <p class="text-sm text-text-muted">※ QR 画像生成は Phase 2。MVP ではリンクをコピーして利用</p>
+  {% else %}
+    <p class="text-[15px] text-text-secondary">QR トークンがありません</p>
+  {% endif %}
+
+  <button
+    type="button"
+    hx-post="{% url 'owner:staff-qr-issue' staff.pk %}"
+    hx-target="#qr-section"
+    hx-swap="innerHTML"
+    class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium bg-accent text-text-inverse hover:bg-accent-hover"
+  >
+    QR 再発行
+  </button>
+</div>
