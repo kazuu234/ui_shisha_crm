@@ -1,0 +1,34 @@
+<div id="matching-row-{{ row.id }}"
+     x-data="{ open: false }"
+     class="border-b border-border-default last:border-b-0">
+
+  <div @click="open = !open; if (open) { $nextTick(() => htmx.trigger($refs.candidateArea, 'loadCandidates')) }"
+       class="py-3 px-5 cursor-pointer hover:bg-bg-surface-alt">
+    <div class="flex items-center justify-between">
+      <div>
+        <span class="font-medium text-text-primary">{{ row.business_date|date:"n/j" }}</span>
+        <span class="text-text-secondary text-sm ml-2">No.{{ row.receipt_no }}</span>
+        <span class="text-text-muted text-xs ml-2">行{{ row.row_number }}</span>
+      </div>
+      <span class="text-text-muted" x-text="open ? '▾' : '▸'"></span>
+    </div>
+    {% if row.csv_customer_name or row.csv_customer_number %}
+      <p class="text-text-secondary text-sm mt-1">
+        {% if row.csv_customer_name %}CSV 顧客名: {{ row.csv_customer_name }}{% endif %}
+        {% if row.csv_customer_number %}
+          <span class="ml-2">顧客番号: {{ row.csv_customer_number }}</span>
+        {% endif %}
+      </p>
+    {% endif %}
+  </div>
+
+  <div x-show="open" x-transition x-ref="candidateArea"
+       hx-get="/o/imports/{{ row.csv_import_id }}/rows/{{ row.id }}/candidates/"
+       hx-trigger="loadCandidates"
+       hx-swap="innerHTML"
+       class="px-5 pb-3">
+    <div class="text-center text-text-muted py-4">
+      <p>候補を読み込み中...</p>
+    </div>
+  </div>
+</div>

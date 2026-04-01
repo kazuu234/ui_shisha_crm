@@ -15,3 +15,7 @@ class CsvUploadForm(forms.Form):
             if f.size > 10 * 1024 * 1024:
                 raise forms.ValidationError("ファイルサイズは 10MB 以下にしてください")
         return f
+
+
+class MatchingConfirmForm(forms.Form):
+    visit_id = forms.UUIDField()

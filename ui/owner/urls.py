@@ -19,7 +19,15 @@ from ui.owner.views.segment import (
     SegmentPreviewView,
     SegmentSettingsView,
 )
-from ui.owner.views.csv_import import CsvImportRowListView, CsvUploadView
+from ui.owner.views.csv_import import (
+    CsvImportRowListView,
+    CsvUploadView,
+    MatchingCandidatesView,
+    MatchingConfirmView,
+    MatchingExecuteView,
+    MatchingManageView,
+    MatchingRejectView,
+)
 from ui.owner.views.visit import (
     VisitDeleteView,
     VisitEditView,
@@ -83,5 +91,30 @@ urlpatterns = [
         "imports/<uuid:pk>/rows/",
         CsvImportRowListView.as_view(),
         name="csv-import-rows",
+    ),
+    path(
+        "imports/<uuid:pk>/matching/execute/",
+        MatchingExecuteView.as_view(),
+        name="matching-execute",
+    ),
+    path(
+        "imports/<uuid:pk>/matching/",
+        MatchingManageView.as_view(),
+        name="matching-manage",
+    ),
+    path(
+        "imports/<uuid:pk>/rows/<uuid:row_id>/candidates/",
+        MatchingCandidatesView.as_view(),
+        name="matching-candidates",
+    ),
+    path(
+        "imports/<uuid:pk>/rows/<uuid:row_id>/confirm/",
+        MatchingConfirmView.as_view(),
+        name="matching-confirm",
+    ),
+    path(
+        "imports/<uuid:pk>/rows/<uuid:row_id>/reject/",
+        MatchingRejectView.as_view(),
+        name="matching-reject",
     ),
 ]
