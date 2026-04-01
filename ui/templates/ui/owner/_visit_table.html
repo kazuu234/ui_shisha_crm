@@ -1,0 +1,276 @@
+{% load static %}
+
+<div
+  hx-target="#visit-list-container"
+  hx-indicator="#visit-table-loading"
+  hx-push-url="true"
+>
+  <div class="flex flex-col gap-4 mb-6 lg:flex-row lg:flex-wrap lg:items-end">
+    <input
+      type="text"
+      name="search"
+      value="{{ current_search }}"
+      placeholder="顧客名で検索"
+      class="w-full lg:max-w-xs rounded-sm border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted"
+      hx-get="{{ visit_list_url }}"
+      hx-trigger="input changed delay:300ms"
+      hx-include="[name='segment'],[name='staff'],[name='sort'],[name='date_from'],[name='date_to']"
+    />
+
+    <select
+      name="segment"
+      class="w-full lg:w-auto rounded-sm border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+      hx-get="{{ visit_list_url }}"
+      hx-trigger="change"
+      hx-include="[name='search'],[name='staff'],[name='sort'],[name='date_from'],[name='date_to']"
+    >
+      {% for value, label in segment_choices %}
+        <option value="{{ value }}" {% if value == current_segment %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <select
+      name="staff"
+      class="w-full lg:w-auto rounded-sm border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+      hx-get="{{ visit_list_url }}"
+      hx-trigger="change"
+      hx-include="[name='search'],[name='segment'],[name='sort'],[name='date_from'],[name='date_to']"
+    >
+      <option value="">全スタッフ</option>
+      {% for sid, sname in staff_choices %}
+        <option value="{{ sid }}" {% if current_staff == sid|stringformat:"s" %}selected{% endif %}>{{ sname }}</option>
+      {% endfor %}
+    </select>
+
+    <div class="flex flex-col gap-1 w-full lg:w-auto">
+      <label class="text-xs text-text-secondary">来店日（から）</label>
+      <input
+        type="date"
+        name="date_from"
+        value="{{ current_date_from }}"
+        class="w-full lg:w-auto rounded-sm border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+        hx-get="{{ visit_list_url }}"
+        hx-trigger="change"
+        hx-include="[name='search'],[name='segment'],[name='staff'],[name='sort'],[name='date_to']"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1 w-full lg:w-auto">
+      <label class="text-xs text-text-secondary">来店日（まで）</label>
+      <input
+        type="date"
+        name="date_to"
+        value="{{ current_date_to }}"
+        class="w-full lg:w-auto rounded-sm border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+        hx-get="{{ visit_list_url }}"
+        hx-trigger="change"
+        hx-include="[name='search'],[name='segment'],[name='staff'],[name='sort'],[name='date_from']"
+      />
+    </div>
+
+    {% if current_search or current_segment or current_staff or current_date_from or current_date_to %}
+      <div class="flex flex-wrap items-center gap-2 w-full">
+        {% if current_search %}
+          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-accent-subtle text-accent border border-border-default">
+            "{{ current_search }}"
+            <a
+              href="#"
+              class="text-accent-hover hover:underline"
+              hx-get="{{ visit_list_url }}"
+              hx-include="[name='segment'],[name='staff'],[name='sort'],[name='date_from'],[name='date_to']"
+            >&#x2715;</a>
+          </span>
+        {% endif %}
+        {% if current_segment %}
+          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-bg-surface-alt text-text-primary border border-border-default">
+            {% if current_segment == "new" %}新規{% elif current_segment == "repeat" %}リピート{% elif current_segment == "regular" %}常連{% endif %}
+            <a
+              href="#"
+              class="text-accent hover:text-accent-hover"
+              hx-get="{{ visit_list_url }}"
+              hx-include="[name='search'],[name='staff'],[name='sort'],[name='date_from'],[name='date_to']"
+            >&#x2715;</a>
+          </span>
+        {% endif %}
+        {% if current_staff %}
+          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-bg-surface-alt text-text-primary border border-border-default">
+            スタッフ
+            <a
+              href="#"
+              class="text-accent hover:text-accent-hover"
+              hx-get="{{ visit_list_url }}"
+              hx-include="[name='search'],[name='segment'],[name='sort'],[name='date_from'],[name='date_to']"
+            >&#x2715;</a>
+          </span>
+        {% endif %}
+        {% if current_date_from %}
+          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-bg-surface-alt text-text-primary border border-border-default">
+            {{ current_date_from }}
+            <a
+              href="#"
+              class="text-accent hover:text-accent-hover"
+              hx-get="{{ visit_list_url }}"
+              hx-include="[name='search'],[name='segment'],[name='staff'],[name='sort'],[name='date_to']"
+            >&#x2715;</a>
+          </span>
+        {% endif %}
+        {% if current_date_to %}
+          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-bg-surface-alt text-text-primary border border-border-default">
+            〜{{ current_date_to }}
+            <a
+              href="#"
+              class="text-accent hover:text-accent-hover"
+              hx-get="{{ visit_list_url }}"
+              hx-include="[name='search'],[name='segment'],[name='staff'],[name='sort'],[name='date_from']"
+            >&#x2715;</a>
+          </span>
+        {% endif %}
+        <a
+          href="#"
+          hx-get="{{ visit_list_url }}"
+          hx-include="[name='sort']"
+          class="text-sm text-text-secondary hover:text-accent"
+        >すべてクリア</a>
+      </div>
+    {% endif %}
+
+    <input type="hidden" name="sort" value="{{ current_sort }}" />
+    <input type="hidden" name="page" value="{{ page_obj.number|default:1 }}" />
+  </div>
+
+  <div id="visit-table-loading" class="htmx-indicator">
+    <div class="space-y-2 mb-4">
+      {% for _ in "12345" %}
+        <div class="h-10 animate-pulse rounded-sm bg-bg-surface-alt"></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="bg-bg-surface rounded-md border border-border-default overflow-hidden shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-border-default">
+        <thead class="bg-bg-surface-alt">
+          <tr>
+            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              <a
+                href="#"
+                class="text-text-primary hover:text-accent"
+                hx-get="{{ visit_list_url }}"
+                hx-vals='{"sort": "{{ sort_toggle_visited_at }}", "page": "1"}'
+                hx-include="[name='search'],[name='segment'],[name='staff'],[name='date_from'],[name='date_to']"
+              >
+                来店日
+                {% if current_sort == "visited_at" %}
+                  <span class="text-accent">▲</span>
+                {% elif current_sort == "-visited_at" %}
+                  <span class="text-accent">▼</span>
+                {% else %}
+                  <span class="text-text-secondary">▲</span>
+                {% endif %}
+              </a>
+            </th>
+            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              <a
+                href="#"
+                class="text-text-primary hover:text-accent"
+                hx-get="{{ visit_list_url }}"
+                hx-vals='{"sort": "{{ sort_toggle_customer_name }}", "page": "1"}'
+                hx-include="[name='search'],[name='segment'],[name='staff'],[name='date_from'],[name='date_to']"
+              >
+                顧客名
+                {% if current_sort == "customer_name" %}
+                  <span class="text-accent">▲</span>
+                {% elif current_sort == "-customer_name" %}
+                  <span class="text-accent">▼</span>
+                {% else %}
+                  <span class="text-text-secondary">▲</span>
+                {% endif %}
+              </a>
+            </th>
+            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              セグメント
+            </th>
+            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              スタッフ
+            </th>
+            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              メモ
+            </th>
+            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              操作
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border-default">
+          {% for visit in visits %}
+            <tr class="hover:bg-bg-surface-alt transition-colors">
+              <td class="px-4 py-3 text-[15px] text-text-secondary whitespace-nowrap">
+                {{ visit.visited_at|date:"Y/m/d" }}
+              </td>
+              <td class="px-4 py-3 text-[15px]">
+                <a
+                  href="{% url 'owner:customer-detail' visit.customer.pk %}"
+                  class="text-accent font-medium hover:text-accent-hover underline"
+                >{{ visit.customer.name }}</a>
+              </td>
+              <td class="px-4 py-3 text-[15px]">
+                {% if visit.customer.segment == "new" %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent-subtle text-accent">新規</span>
+                {% elif visit.customer.segment == "repeat" %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-subtle text-warning-dark">リピート</span>
+                {% elif visit.customer.segment == "regular" %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-subtle text-success">常連</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-[15px] text-text-secondary">{{ visit.staff.display_name }}</td>
+              <td class="px-4 py-3 text-[15px] text-text-secondary">{{ visit.conversation_memo|truncatechars:30 }}</td>
+              <td class="px-4 py-3 text-[15px] whitespace-nowrap">
+                <div class="flex flex-wrap items-center gap-2">
+                  <a
+                    href="{% url 'owner:visit-edit' visit.pk %}"
+                    class="inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-xs font-medium bg-accent text-text-inverse hover:bg-accent-hover"
+                  >編集</a>
+                  <button
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-xs font-medium border border-border-strong text-text-primary bg-bg-surface hover:bg-bg-surface-alt"
+                    @click="$dispatch('open-delete-modal', { id: '{{ visit.pk }}', name: '{{ visit.customer.name|escapejs }}', date: '{{ visit.visited_at|date:"Y/m/d" }}' })"
+                  >削除</button>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="px-4 py-8 text-center text-text-secondary text-[15px]">
+                来店記録がありません
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if is_paginated %}
+    <div class="flex items-center justify-center gap-4 mt-6">
+      {% if page_obj.has_previous %}
+        <a
+          href="#"
+          hx-get="{{ visit_list_url }}"
+          hx-vals='{"page": "{{ page_obj.previous_page_number }}"}'
+          hx-include="[name='search'],[name='segment'],[name='staff'],[name='sort'],[name='date_from'],[name='date_to']"
+          class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium border border-border-strong text-text-primary bg-bg-surface hover:bg-bg-surface-alt"
+        >前へ</a>
+      {% endif %}
+      <span class="text-sm text-text-secondary">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a
+          href="#"
+          hx-get="{{ visit_list_url }}"
+          hx-vals='{"page": "{{ page_obj.next_page_number }}"}'
+          hx-include="[name='search'],[name='segment'],[name='staff'],[name='sort'],[name='date_from'],[name='date_to']"
+          class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium border border-border-strong text-text-primary bg-bg-surface hover:bg-bg-surface-alt"
+        >次へ</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>

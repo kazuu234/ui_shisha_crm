@@ -1,0 +1,57 @@
+{% extends "ui/base_owner.html" %}
+{% load static %}
+
+{% block page_title %}来店記録の編集{% endblock %}
+
+{% block content %}
+  <div class="mb-4">
+    <a href="{% url 'owner:visit-list' %}" class="text-sm text-accent hover:text-accent-hover">
+      ← 来店記録一覧に戻る
+    </a>
+  </div>
+
+  <div class="max-w-xl flex flex-col gap-4 mb-6">
+    <div>
+      <span class="block text-sm font-medium text-text-secondary mb-1">顧客</span>
+      <p class="text-[15px] text-text-primary">{{ visit.customer.name }}</p>
+    </div>
+    <div>
+      <span class="block text-sm font-medium text-text-secondary mb-1">記録スタッフ</span>
+      <p class="text-[15px] text-text-primary">{{ visit.staff.display_name }}</p>
+    </div>
+  </div>
+
+  <form method="post" class="max-w-xl flex flex-col gap-4">
+    {% csrf_token %}
+
+    <div>
+      <label for="{{ form.visited_at.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-1">{{ form.visited_at.label }}</label>
+      {{ form.visited_at }}
+      {% if form.visited_at.errors %}<p class="mt-1 text-sm text-error">{{ form.visited_at.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div>
+      <label for="{{ form.conversation_memo.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-1">{{ form.conversation_memo.label }}</label>
+      {{ form.conversation_memo }}
+      {% if form.conversation_memo.errors %}<p class="mt-1 text-sm text-error">{{ form.conversation_memo.errors.0 }}</p>{% endif %}
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="rounded-sm border border-error/20 bg-error-subtle text-error p-3 text-sm" role="alert">
+        {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="flex gap-4 mt-2">
+      <button type="submit" class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium bg-accent text-text-inverse hover:bg-accent-hover">
+        保存
+      </button>
+      <a
+        href="{% url 'owner:visit-list' %}"
+        class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium border border-border-strong text-text-primary bg-bg-surface hover:bg-bg-surface-alt"
+      >キャンセル</a>
+    </div>
+  </form>
+{% endblock %}

@@ -14,6 +14,11 @@ from ui.owner.views.staff_mgmt import (
     StaffQRIssueView,
 )
 from ui.owner.views.stub import StubDashboardView
+from ui.owner.views.visit import (
+    VisitDeleteView,
+    VisitEditView,
+    VisitListView,
+)
 
 app_name = "owner"
 
@@ -44,5 +49,12 @@ urlpatterns = [
         "customers/<uuid:pk>/edit/",
         CustomerEditView.as_view(),
         name="customer-edit",
+    ),
+    path("visits/", VisitListView.as_view(), name="visit-list"),
+    path("visits/<uuid:pk>/edit/", VisitEditView.as_view(), name="visit-edit"),
+    path(
+        "visits/<uuid:pk>/delete/",
+        VisitDeleteView.as_view(),
+        name="visit-delete",
     ),
 ]
