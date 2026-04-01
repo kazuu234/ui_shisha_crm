@@ -11,6 +11,7 @@ from core.exceptions import BusinessError
 from customers.models import Customer
 from tasks.models import HearingTask
 from tenants.models import Store, StoreGroup
+from ui.owner.forms.customer import CustomerEditForm
 from visits.models import Visit
 
 
@@ -427,6 +428,42 @@ class OwnerCustomerViewsTests(TestCase):
             },
         )
         mock_sync.assert_not_called()
+
+    def test_customer_edit_empty_memo_to_none(self):
+        c = Customer.objects.create(store=self.store, name="FormMemo")
+        form = CustomerEditForm(
+            {"name": "テスト顧客", "memo": ""},
+            instance=c,
+        )
+        self.assertTrue(form.is_valid())
+        self.assertIsNone(form.cleaned_data["memo"])
+
+    def test_customer_edit_whitespace_memo_to_none(self):
+        c = Customer.objects.create(store=self.store, name="FormMemoWs")
+        form = CustomerEditForm(
+            {"name": "テスト顧客", "memo": "  "},
+            instance=c,
+        )
+        self.assertTrue(form.is_valid())
+        self.assertIsNone(form.cleaned_data["memo"])
+
+    def test_customer_edit_memo_preserved(self):
+        c = Customer.objects.create(store=self.store, name="FormMemoKeep")
+        form = CustomerEditForm(
+            {"name": "テスト顧客", "memo": "some text"},
+            instance=c,
+        )
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["memo"], "some text")
+
+    def test_customer_edit_none_memo_to_none(self):
+        c = Customer.objects.create(store=self.store, name="FormMemoNull")
+        form = CustomerEditForm(
+            {"name": "テスト顧客"},
+            instance=c,
+        )
+        self.assertTrue(form.is_valid())
+        self.assertIsNone(form.cleaned_data["memo"])
 
     def test_customer_edit_empty_to_none(self):
         c = Customer.objects.create(
