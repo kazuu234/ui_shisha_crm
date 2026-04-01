@@ -19,7 +19,7 @@
         </div>
         <button
           type="button"
-          hx-patch="{% url 'staff:matching-confirm' row_id %}"
+          hx-patch="/s/matching/{{ row_id }}/confirm/"
           hx-vals='{"visit_id": "{{ candidate.visit_id }}"}'
           hx-target="#matching-row-{{ row_id }}"
           hx-swap="outerHTML"
@@ -34,7 +34,7 @@
   <div class="mt-3 pt-3 border-t border-border-default">
     <button
       type="button"
-      hx-patch="{% url 'staff:matching-reject' row_id %}"
+      hx-patch="/s/matching/{{ row_id }}/reject/"
       hx-target="#matching-row-{{ row_id }}"
       hx-swap="outerHTML"
       class="text-sm text-error font-medium"
@@ -49,7 +49,7 @@
   <div class="mt-3 pt-3 border-t border-border-default">
     <button
       type="button"
-      hx-patch="{% url 'staff:matching-reject' row_id %}"
+      hx-patch="/s/matching/{{ row_id }}/reject/"
       hx-target="#matching-row-{{ row_id }}"
       hx-swap="outerHTML"
       class="text-sm text-error font-medium"
