@@ -74,7 +74,7 @@ class SessionView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin, TemplateVi
             Visit.objects.for_store(self.store)
             .filter(customer=customer)
             .select_related("staff")
-            .order_by("-visited_at")[:5]
+            .order_by("-visited_at", "-created_at")[:5]
         )
         last_visited_at = recent_visits[0].visited_at if recent_visits else None
 
@@ -204,7 +204,7 @@ class SessionRecentVisitsFragmentView(LoginRequiredMixin, StaffRequiredMixin, St
             Visit.objects.for_store(self.store)
             .filter(customer=customer)
             .select_related("staff")
-            .order_by("-visited_at")[:5]
+            .order_by("-visited_at", "-created_at")[:5]
         )
         return render(
             request,
