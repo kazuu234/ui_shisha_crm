@@ -1,0 +1,152 @@
+{% extends "ui/base_owner.html" %}
+{% load static %}
+
+{% block page_title %}セグメント閾値設定{% endblock %}
+
+{% block toast %}
+  {% if toast %}
+    <div
+      x-data="{ show: true }"
+      x-show="show"
+      x-init="setTimeout(() => { show = false }, 3000)"
+      x-transition
+      class="pointer-events-auto fixed inset-x-0 bottom-6 z-[60] mx-auto flex max-w-md justify-center px-4"
+    >
+      {% if toast.type == "error" %}
+        <div class="w-full rounded-md border border-error bg-error-subtle px-4 py-3 text-sm text-error shadow-lg">
+          {{ toast.message }}
+        </div>
+      {% else %}
+        <div class="w-full rounded-md border border-success bg-success-subtle px-4 py-3 text-sm text-success shadow-lg">
+          {{ toast.message }}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div
+  class="max-w-4xl flex flex-col gap-10"
+  x-data="{ previewShown: false }"
+>
+  <section>
+    <h2 class="text-base font-semibold text-text-primary mb-4">現在の閾値</h2>
+    <div class="overflow-x-auto rounded-sm border border-border-default">
+      <table class="min-w-full text-sm text-text-primary">
+        <thead class="bg-bg-surface-alt text-left text-text-secondary">
+          <tr>
+            <th class="px-4 py-3 font-medium">セグメント</th>
+            <th class="px-4 py-3 font-medium">最小来店回数</th>
+            <th class="px-4 py-3 font-medium">最大来店回数</th>
+            <th class="px-4 py-3 font-medium">表示順</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border-default bg-bg-surface">
+          {% for t in thresholds %}
+            <tr>
+              <td class="px-4 py-3">
+                {% if t.segment_name == "new" %}
+                  <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium bg-accent-subtle text-accent">新規</span>
+                {% elif t.segment_name == "repeat" %}
+                  <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium bg-warning-subtle text-warning-dark">リピート</span>
+                {% elif t.segment_name == "regular" %}
+                  <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium bg-success-subtle text-success">常連</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">{{ t.min_visits }}</td>
+              <td class="px-4 py-3">
+                {% if t.max_visits is not None %}
+                  {{ t.max_visits }}
+                {% else %}
+                  <span class="text-text-secondary">上限なし</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">{{ t.display_order }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="text-base font-semibold text-text-primary mb-4">閾値変更</h2>
+    <form id="threshold-form" class="flex flex-col gap-6">
+      {% csrf_token %}
+      {{ formset.management_form }}
+
+      {% for form in formset %}
+        <div class="flex flex-wrap items-end gap-4 pb-4 border-b border-border-default last:border-0">
+          {{ form.segment_name }}
+          {{ form.display_order }}
+          <span class="font-medium text-text-primary w-20 shrink-0">{{ form.segment_label }}</span>
+
+          <div class="flex flex-col gap-1 min-w-[8rem]">
+            <label class="text-sm text-text-secondary" for="{{ form.min_visits.id_for_label }}">最小</label>
+            <div x-bind:class="{ 'pointer-events-none opacity-60': previewShown }">
+              {{ form.min_visits }}
+            </div>
+            {% if form.min_visits.errors %}
+              <p class="text-sm text-error">{{ form.min_visits.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <div class="flex flex-col gap-1 min-w-[8rem]">
+            <span class="text-sm text-text-secondary">最大</span>
+            {% if form.initial.segment_name == "regular" %}
+              <span class="text-text-secondary text-[15px] py-2">上限なし</span>
+              {{ form.max_visits }}
+            {% else %}
+              <div x-bind:class="{ 'pointer-events-none opacity-60': previewShown }">
+                {{ form.max_visits }}
+              </div>
+              {% if form.max_visits.errors %}
+                <p class="text-sm text-error">{{ form.max_visits.errors.0 }}</p>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+
+      {% if formset.non_form_errors %}
+        <div class="rounded-sm border border-error/20 bg-error-subtle text-error p-3 text-sm" role="alert">
+          {% for error in formset.non_form_errors %}
+            <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="flex flex-wrap gap-4 mt-2">
+        <button
+          type="button"
+          x-show="!previewShown"
+          class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium border border-border-strong text-text-primary bg-bg-surface hover:bg-bg-surface-alt"
+          hx-post="{% url 'owner:segment-preview' %}"
+          hx-target="#preview-zone"
+          hx-include="#threshold-form"
+          hx-swap="innerHTML"
+          hx-indicator="#preview-loading"
+          @htmx:after-settle.window="
+            const t = $event.detail.target;
+            if (t && t.id === 'preview-zone' && $event.detail.xhr.status < 400) previewShown = true
+          "
+        >プレビュー</button>
+        <button
+          type="button"
+          x-show="previewShown"
+          class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium border border-border-strong text-text-primary bg-bg-surface hover:bg-bg-surface-alt"
+          @click="previewShown = false; document.getElementById('preview-zone').innerHTML = ''"
+        >変更する</button>
+      </div>
+    </form>
+  </section>
+
+  <section>
+    <div id="preview-zone" class="min-h-[1px]"></div>
+    <div id="preview-loading" class="htmx-indicator mt-4 text-sm text-text-secondary">
+      計算中…
+    </div>
+  </section>
+</div>
+{% endblock %}
