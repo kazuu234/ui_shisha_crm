@@ -1,0 +1,64 @@
+{% extends "ui/base_owner.html" %}
+{% load static %}
+
+{% block page_title %}{{ customer.name }} - 編集{% endblock %}
+
+{% block content %}
+  <form method="post" class="max-w-xl flex flex-col gap-4">
+    {% csrf_token %}
+
+    <div>
+      <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-1">{{ form.name.label }}</label>
+      {{ form.name }}
+      {% if form.name.errors %}<p class="mt-1 text-sm text-error">{{ form.name.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div>
+      <label for="{{ form.age.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-1">{{ form.age.label }}</label>
+      {{ form.age }}
+      {% if form.age.errors %}<p class="mt-1 text-sm text-error">{{ form.age.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div>
+      <label for="{{ form.area.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-1">{{ form.area.label }}</label>
+      {{ form.area }}
+      {% if form.area.errors %}<p class="mt-1 text-sm text-error">{{ form.area.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div>
+      <label for="{{ form.shisha_experience.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-1">{{ form.shisha_experience.label }}</label>
+      {{ form.shisha_experience }}
+      {% if form.shisha_experience.errors %}<p class="mt-1 text-sm text-error">{{ form.shisha_experience.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div>
+      <label for="{{ form.line_id.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-1">{{ form.line_id.label }}</label>
+      {{ form.line_id }}
+      {% if form.line_id.errors %}<p class="mt-1 text-sm text-error">{{ form.line_id.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div>
+      <label for="{{ form.memo.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-1">{{ form.memo.label }}</label>
+      {{ form.memo }}
+      {% if form.memo.errors %}<p class="mt-1 text-sm text-error">{{ form.memo.errors.0 }}</p>{% endif %}
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="rounded-sm border border-error/20 bg-error-subtle text-error p-3 text-sm" role="alert">
+        {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="flex gap-4 mt-2">
+      <button type="submit" class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium bg-accent text-text-inverse hover:bg-accent-hover">
+        保存
+      </button>
+      <a
+        href="{% url 'owner:customer-detail' customer.pk %}"
+        class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium border border-border-strong text-text-primary bg-bg-surface hover:bg-bg-surface-alt"
+      >キャンセル</a>
+    </div>
+  </form>
+{% endblock %}

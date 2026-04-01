@@ -1,0 +1,133 @@
+{% extends "ui/base_owner.html" %}
+{% load static %}
+
+{% block page_title %}{{ customer.name }}{% endblock %}
+
+{% block toast %}
+  {% if toast %}
+    <div
+      x-data="{ show: true }"
+      x-show="show"
+      x-init="setTimeout(() => { show = false }, 3000)"
+      x-transition
+      class="pointer-events-auto fixed inset-x-0 bottom-6 z-[60] mx-auto flex max-w-md justify-center px-4"
+    >
+      <div class="w-full rounded-md border border-success bg-success-subtle px-4 py-3 text-sm text-success shadow-lg">
+        {{ toast.message }}
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <div class="mb-4">
+    <a href="{% url 'owner:customer-list' %}" class="text-sm text-accent hover:text-accent-hover">
+      ← 顧客一覧に戻る
+    </a>
+  </div>
+
+  <div class="flex justify-end mb-4">
+    <a
+      href="{% url 'owner:customer-edit' customer.pk %}"
+      class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium bg-accent text-text-inverse hover:bg-accent-hover"
+    >編集</a>
+  </div>
+
+  <section class="mb-8">
+    <h2 class="text-base font-semibold text-text-primary mb-3">基本情報</h2>
+    <dl class="grid grid-cols-1 gap-3 sm:grid-cols-[140px_1fr] sm:gap-x-4 text-[15px]">
+      <dt class="text-text-secondary">名前</dt>
+      <dd class="text-text-primary">{{ customer.name }}</dd>
+
+      <dt class="text-text-secondary">セグメント</dt>
+      <dd>
+        {% if customer.segment == "new" %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent-subtle text-accent">新規</span>
+        {% elif customer.segment == "repeat" %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-subtle text-warning-dark">リピート</span>
+        {% elif customer.segment == "regular" %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-subtle text-success">常連</span>
+        {% endif %}
+      </dd>
+
+      <dt class="text-text-secondary">来店回数</dt>
+      <dd class="text-text-primary">{{ customer.visit_count }}回</dd>
+
+      <dt class="text-text-secondary">年齢</dt>
+      <dd class="text-text-primary">
+        {% if customer.age is not None %}{{ customer.age }}歳{% else %}<span class="text-text-muted">未入力</span>{% endif %}
+      </dd>
+
+      <dt class="text-text-secondary">居住エリア</dt>
+      <dd class="text-text-primary">
+        {% if customer.area %}{{ customer.area }}{% else %}<span class="text-text-muted">未入力</span>{% endif %}
+      </dd>
+
+      <dt class="text-text-secondary">シーシャ歴</dt>
+      <dd class="text-text-primary">
+        {% if shisha_experience_label %}{{ shisha_experience_label }}{% else %}<span class="text-text-muted">未入力</span>{% endif %}
+      </dd>
+
+      <dt class="text-text-secondary">LINE ID</dt>
+      <dd class="text-text-primary">
+        {% if customer.line_id %}{{ customer.line_id }}{% else %}<span class="text-text-muted">未入力</span>{% endif %}
+      </dd>
+
+      <dt class="text-text-secondary">メモ</dt>
+      <dd class="text-text-primary">
+        {% if customer.memo %}{{ customer.memo|linebreaksbr }}{% else %}<span class="text-text-muted">未入力</span>{% endif %}
+      </dd>
+
+      <dt class="text-text-secondary">作成日</dt>
+      <dd class="text-text-secondary">{{ customer.created_at|date:"Y/m/d H:i" }}</dd>
+
+      <dt class="text-text-secondary">更新日</dt>
+      <dd class="text-text-secondary">{{ customer.updated_at|date:"Y/m/d H:i" }}</dd>
+    </dl>
+  </section>
+
+  <section class="mb-8">
+    <h2 class="text-base font-semibold text-text-primary mb-3">未消化ヒアリングタスク</h2>
+    {% if open_tasks %}
+      <ul class="list-disc list-inside space-y-1 text-[15px] text-text-primary">
+        {% for task in open_tasks %}
+          <li>{{ task.field_label }}（{{ task.created_at|date:"Y/m/d" }} 作成）</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-text-secondary text-[15px]">全てのヒアリングが完了しています</p>
+    {% endif %}
+  </section>
+
+  <section class="mb-8">
+    <h2 class="text-base font-semibold text-text-primary mb-3">来店履歴</h2>
+    {% if visits %}
+      <div class="bg-bg-surface rounded-md border border-border-default overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-border-default">
+            <thead class="bg-bg-surface-alt">
+              <tr>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary">来店日</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary">対応スタッフ</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary">メモ</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border-default">
+              {% for visit in visits %}
+                <tr>
+                  <td class="px-4 py-3 text-[15px] text-text-primary">{{ visit.visited_at|date:"Y/m/d" }}</td>
+                  <td class="px-4 py-3 text-[15px] text-text-secondary">{{ visit.staff.display_name }}</td>
+                  <td class="px-4 py-3 text-[15px] text-text-secondary">
+                    {% if visit.conversation_memo %}{{ visit.conversation_memo|truncatechars:50 }}{% else %}<span class="text-text-muted">-</span>{% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% else %}
+      <p class="text-text-secondary text-[15px]">来店記録がありません</p>
+    {% endif %}
+  </section>
+{% endblock %}

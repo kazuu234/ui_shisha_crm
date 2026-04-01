@@ -1,0 +1,211 @@
+{% load static %}
+
+<div
+  hx-target="#customer-list-container"
+  hx-indicator="#customer-table-loading"
+  hx-push-url="true"
+>
+  <div class="flex flex-col gap-4 mb-6 lg:flex-row lg:flex-wrap lg:items-center">
+    <input
+      type="text"
+      name="search"
+      value="{{ current_search }}"
+      placeholder="顧客名で検索"
+      class="w-full lg:max-w-xs rounded-sm border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted"
+      hx-get="{{ customer_list_url }}"
+      hx-trigger="input changed delay:300ms"
+      hx-include="[name='segment'],[name='sort']"
+    />
+
+    <select
+      name="segment"
+      class="w-full lg:w-auto rounded-sm border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary"
+      hx-get="{{ customer_list_url }}"
+      hx-trigger="change"
+      hx-include="[name='search'],[name='sort']"
+    >
+      {% for value, label in segment_choices %}
+        <option value="{{ value }}" {% if value == current_segment %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    {% if current_search or current_segment %}
+      <div class="flex flex-wrap items-center gap-2">
+        {% if current_search %}
+          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-accent-subtle text-accent border border-border-default">
+            "{{ current_search }}"
+            <a
+              href="#"
+              class="text-accent-hover hover:underline"
+              hx-get="{{ customer_list_url }}"
+              hx-include="[name='segment'],[name='sort']"
+            >&#x2715;</a>
+          </span>
+        {% endif %}
+        {% if current_segment %}
+          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-bg-surface-alt text-text-primary border border-border-default">
+            {% if current_segment == "new" %}新規{% elif current_segment == "repeat" %}リピート{% elif current_segment == "regular" %}常連{% endif %}
+            <a
+              href="#"
+              class="text-accent hover:text-accent-hover"
+              hx-get="{{ customer_list_url }}"
+              hx-include="[name='search'],[name='sort']"
+            >&#x2715;</a>
+          </span>
+        {% endif %}
+        <a
+          href="#"
+          hx-get="{{ customer_list_url }}"
+          hx-include="[name='sort']"
+          class="text-sm text-text-secondary hover:text-accent"
+        >すべてクリア</a>
+      </div>
+    {% endif %}
+
+    <input type="hidden" name="sort" value="{{ current_sort }}" />
+    <input type="hidden" name="page" value="{{ page_obj.number|default:1 }}" />
+  </div>
+
+  <div id="customer-table-loading" class="htmx-indicator">
+    <div class="space-y-2 mb-4">
+      {% for _ in "12345" %}
+        <div class="h-10 animate-pulse rounded-sm bg-bg-surface-alt"></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="bg-bg-surface rounded-md border border-border-default overflow-hidden shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-border-default">
+        <thead class="bg-bg-surface-alt">
+          <tr>
+            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              <a
+                href="#"
+                class="text-text-primary hover:text-accent"
+                hx-get="{{ customer_list_url }}"
+                hx-vals='{"sort": "{{ sort_toggle_name }}", "page": "1"}'
+                hx-include="[name='search'],[name='segment']"
+              >
+                名前
+                {% if current_sort == "name" %}
+                  <span class="text-accent">▲</span>
+                {% elif current_sort == "-name" %}
+                  <span class="text-accent">▼</span>
+                {% else %}
+                  <span class="text-text-secondary">▲</span>
+                {% endif %}
+              </a>
+            </th>
+            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              セグメント
+            </th>
+            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              <a
+                href="#"
+                class="text-text-primary hover:text-accent"
+                hx-get="{{ customer_list_url }}"
+                hx-vals='{"sort": "{{ sort_toggle_visit_count }}", "page": "1"}'
+                hx-include="[name='search'],[name='segment']"
+              >
+                来店回数
+                {% if current_sort == "visit_count" %}
+                  <span class="text-accent">▲</span>
+                {% elif current_sort == "-visit_count" %}
+                  <span class="text-accent">▼</span>
+                {% else %}
+                  <span class="text-text-secondary">▲</span>
+                {% endif %}
+              </a>
+            </th>
+            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              <a
+                href="#"
+                class="text-text-primary hover:text-accent"
+                hx-get="{{ customer_list_url }}"
+                hx-vals='{"sort": "{{ sort_toggle_last_visited }}", "page": "1"}'
+                hx-include="[name='search'],[name='segment']"
+              >
+                最終来店日
+                {% if current_sort == "last_visited_at" %}
+                  <span class="text-accent">▲</span>
+                {% elif current_sort == "-last_visited_at" %}
+                  <span class="text-accent">▼</span>
+                {% else %}
+                  <span class="text-text-secondary">▲</span>
+                {% endif %}
+              </a>
+            </th>
+            <th scope="col" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary">
+              未消化タスク
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border-default">
+          {% for customer in customers %}
+            <tr
+              class="relative cursor-pointer hover:bg-bg-surface-alt transition-colors"
+              onclick="location.href='{% url 'owner:customer-detail' customer.pk %}'"
+            >
+              <td class="px-4 py-3 text-[15px] text-text-primary">
+                <a
+                  href="{% url 'owner:customer-detail' customer.pk %}"
+                  class="text-accent font-medium hover:text-accent-hover underline z-10 relative"
+                  onclick="event.stopPropagation()"
+                >{{ customer.name }}</a>
+              </td>
+              <td class="px-4 py-3 text-[15px]">
+                {% if customer.segment == "new" %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent-subtle text-accent">新規</span>
+                {% elif customer.segment == "repeat" %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-subtle text-warning-dark">リピート</span>
+                {% elif customer.segment == "regular" %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-subtle text-success">常連</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-[15px] text-text-secondary">{{ customer.visit_count }}</td>
+              <td class="px-4 py-3 text-[15px] text-text-secondary">
+                {% if customer.last_visited_at %}
+                  {{ customer.last_visited_at|date:"Y/m/d" }}
+                {% else %}
+                  <span class="text-text-muted">未来店</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-[15px] text-text-secondary">{{ customer.open_task_count }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="px-4 py-8 text-center text-text-secondary text-[15px]">
+                顧客がまだ登録されていません
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if is_paginated %}
+    <div class="flex items-center justify-center gap-4 mt-6">
+      {% if page_obj.has_previous %}
+        <a
+          href="#"
+          hx-get="{{ customer_list_url }}"
+          hx-vals='{"page": "{{ page_obj.previous_page_number }}"}'
+          hx-include="[name='search'],[name='segment'],[name='sort']"
+          class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium border border-border-strong text-text-primary bg-bg-surface hover:bg-bg-surface-alt"
+        >前へ</a>
+      {% endif %}
+      <span class="text-sm text-text-secondary">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a
+          href="#"
+          hx-get="{{ customer_list_url }}"
+          hx-vals='{"page": "{{ page_obj.next_page_number }}"}'
+          hx-include="[name='search'],[name='segment'],[name='sort']"
+          class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium border border-border-strong text-text-primary bg-bg-surface hover:bg-bg-surface-alt"
+        >次へ</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>

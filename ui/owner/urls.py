@@ -1,6 +1,11 @@
 from django.urls import path
 
 from ui.owner.views.auth import OwnerLoginView, OwnerLogoutView
+from ui.owner.views.customer import (
+    CustomerDetailView,
+    CustomerEditView,
+    CustomerListView,
+)
 from ui.owner.views.staff_mgmt import (
     StaffCreateView,
     StaffDeactivateView,
@@ -28,5 +33,16 @@ urlpatterns = [
         "staff/<uuid:pk>/deactivate/",
         StaffDeactivateView.as_view(),
         name="staff-deactivate",
+    ),
+    path("customers/", CustomerListView.as_view(), name="customer-list"),
+    path(
+        "customers/<uuid:pk>/",
+        CustomerDetailView.as_view(),
+        name="customer-detail",
+    ),
+    path(
+        "customers/<uuid:pk>/edit/",
+        CustomerEditView.as_view(),
+        name="customer-edit",
     ),
 ]
