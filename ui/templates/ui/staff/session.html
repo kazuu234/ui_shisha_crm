@@ -9,6 +9,7 @@
 <div
   x-data="{ memo: '', memoOpen: false, allDone: {% if tasks %}false{% else %}true{% endif %} }"
   @all-tasks-done.window="allDone = true"
+  @clear-memo.window="memo = ''"
   class="flex flex-col gap-6 -m-5 min-h-[calc(100vh-44px-56px-40px)] px-5 pb-6 pt-1"
 >
   {% include "ui/staff/_customer_header.html" %}

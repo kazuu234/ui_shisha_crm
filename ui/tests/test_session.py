@@ -326,6 +326,7 @@ class SessionFlowTests(TestCase):
         )
         hx = response.headers.get("HX-Trigger", "")
         self.assertIn("showToast", hx)
+        self.assertIn("clearMemo", hx)
 
     def test_visit_create_updates_count_and_segment(self):
         c = Customer.objects.create(store=self.store, name="SegVisit")

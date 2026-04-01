@@ -56,6 +56,7 @@ class VisitCreateView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin, View):
             {
                 "showToast": {"message": "来店記録を作成しました", "type": "success"},
                 "visitCreated": {},
+                "clearMemo": {},
             }
         )
         return response
