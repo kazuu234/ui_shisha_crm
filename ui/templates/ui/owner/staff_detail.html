@@ -1,0 +1,84 @@
+{% extends "ui/base_owner.html" %}
+{% load static %}
+
+{% block title %}{{ staff.display_name }}{% endblock %}
+
+{% block page_title %}{{ staff.display_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl space-y-8">
+  {% if error %}
+    <div class="rounded-sm border border-error/20 bg-error-subtle text-error p-3 text-[15px]" role="alert">
+      <p>{{ error }}</p>
+    </div>
+  {% endif %}
+
+  <div class="bg-bg-surface rounded-md border border-border-default p-5 shadow-sm">
+    <h2 class="text-[17px] font-bold text-text-primary mb-4">基本情報</h2>
+    <dl class="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-x-4 gap-y-3 text-[15px]">
+      <dt class="text-text-secondary font-medium">表示名</dt>
+      <dd class="text-text-primary">{{ staff.display_name }}</dd>
+      <dt class="text-text-secondary font-medium">ロール</dt>
+      <dd class="text-text-primary">{{ staff.get_role_display }}</dd>
+      <dt class="text-text-secondary font-medium">種別</dt>
+      <dd class="text-text-primary">{{ staff.get_staff_type_display }}</dd>
+      <dt class="text-text-secondary font-medium">作成日</dt>
+      <dd class="text-text-primary">{{ staff.created_at|date:"Y/m/d H:i" }}</dd>
+    </dl>
+  </div>
+
+  <section id="qr-section" class="bg-bg-surface rounded-md border border-border-default p-5 shadow-sm">
+    {% include "ui/owner/_qr_section.html" %}
+  </section>
+
+  <div x-data="{ showConfirm: false }" class="space-y-3">
+    <button
+      type="button"
+      @click="showConfirm = true"
+      class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium bg-error text-text-inverse hover:bg-error-hover"
+    >
+      このスタッフを無効化
+    </button>
+
+    <div
+      x-show="showConfirm"
+      x-transition
+      x-cloak
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-text-primary/40"
+      @keydown.escape.window="showConfirm = false"
+      @click="showConfirm = false"
+    >
+      <div
+        class="bg-bg-surface rounded-md border border-border-default shadow-lg max-w-md w-full p-6 space-y-4"
+        @click.stop
+      >
+        <p class="text-[15px] text-text-primary">
+          {{ staff.display_name }} を無効化しますか？この操作は元に戻せません。
+        </p>
+        <form method="post" action="{% url 'owner:staff-deactivate' staff.pk %}" class="flex flex-wrap gap-3">
+          {% csrf_token %}
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium bg-error text-text-inverse hover:bg-error-hover"
+          >
+            無効化する
+          </button>
+          <button
+            type="button"
+            @click="showConfirm = false"
+            class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium border border-border-default text-text-secondary hover:bg-bg-surface-alt"
+          >
+            キャンセル
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <a href="{% url 'owner:staff-list' %}" class="text-sm font-medium text-accent hover:text-accent-hover">
+      ← スタッフ一覧に戻る
+    </a>
+  </div>
+</div>
+{% endblock %}

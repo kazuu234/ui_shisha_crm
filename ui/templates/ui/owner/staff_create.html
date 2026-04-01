@@ -1,0 +1,56 @@
+{% extends "ui/base_owner.html" %}
+{% load static %}
+
+{% block title %}スタッフ作成{% endblock %}
+
+{% block page_title %}スタッフ作成{% endblock %}
+
+{% block content %}
+<div class="max-w-xl">
+  <form method="post" class="space-y-5">
+    {% csrf_token %}
+
+    <div>
+      <label for="{{ form.display_name.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-1">
+        {{ form.display_name.label }}
+      </label>
+      {{ form.display_name }}
+      {% if form.display_name.errors %}
+        <p class="mt-1 text-sm text-error">{{ form.display_name.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <label for="{{ form.role.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-1">
+        {{ form.role.label }}
+      </label>
+      {{ form.role }}
+      {% if form.role.errors %}
+        <p class="mt-1 text-sm text-error">{{ form.role.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <label for="{{ form.staff_type.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-1">
+        {{ form.staff_type.label }}
+      </label>
+      {{ form.staff_type }}
+      {% if form.staff_type.errors %}
+        <p class="mt-1 text-sm text-error">{{ form.staff_type.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <div class="flex items-center gap-3 pt-2">
+      <button
+        type="submit"
+        class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium bg-accent text-text-inverse hover:bg-accent-hover"
+      >
+        作成
+      </button>
+      <a href="{% url 'owner:staff-list' %}" class="text-sm font-medium text-accent hover:text-accent-hover">
+        キャンセル
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}
