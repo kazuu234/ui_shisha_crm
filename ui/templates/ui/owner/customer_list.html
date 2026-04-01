@@ -1,0 +1,10 @@
+{% extends "ui/base_owner.html" %}
+{% load static %}
+
+{% block page_title %}顧客管理{% endblock %}
+
+{% block content %}
+  <div id="customer-list-container">
+    {% include "ui/owner/_customer_table.html" %}
+  </div>
+{% endblock %}

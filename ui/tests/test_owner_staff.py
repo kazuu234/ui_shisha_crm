@@ -94,7 +94,7 @@ class OwnerStaffViewsTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         new_staff = Staff.objects.get(display_name="New From Form")
-        self.assertEqual(response.url, reverse("owner:staff-detail", pk=new_staff.pk))
+        self.assertEqual(response.url, reverse("owner:staff-detail", kwargs={"pk": new_staff.pk}))
         self.assertEqual(Staff.objects.filter(store=self.store).count(), before_staff + 1)
         self.assertEqual(QRToken.objects.count(), before_tokens + 1)
         self.assertTrue(
@@ -143,7 +143,7 @@ class OwnerStaffViewsTests(TestCase):
         self.assertEqual(r_staff.status_code, 302)
         staff_user = Staff.objects.get(display_name="QR Staff Role")
         detail = self.client.get(
-            reverse("owner:staff-detail", pk=staff_user.pk)
+            reverse("owner:staff-detail", kwargs={"pk": staff_user.pk})
         )
         self.assertContains(detail, "/s/login/#token=")
 
@@ -158,7 +158,7 @@ class OwnerStaffViewsTests(TestCase):
         self.assertEqual(r_owner.status_code, 302)
         owner_user = Staff.objects.get(display_name="QR Owner Role")
         detail_o = self.client.get(
-            reverse("owner:staff-detail", pk=owner_user.pk)
+            reverse("owner:staff-detail", kwargs={"pk": owner_user.pk})
         )
         self.assertContains(detail_o, "/o/login/#token=")
 
@@ -170,7 +170,7 @@ class OwnerStaffViewsTests(TestCase):
         )
         self.client.force_login(self.owner)
         response = self.client.get(
-            reverse("owner:staff-detail", pk=self.staff.pk)
+            reverse("owner:staff-detail", kwargs={"pk": self.staff.pk})
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.staff.display_name)
@@ -187,7 +187,7 @@ class OwnerStaffViewsTests(TestCase):
         )
         self.client.force_login(self.owner)
         response = self.client.get(
-            reverse("owner:staff-detail", pk=inactive.pk)
+            reverse("owner:staff-detail", kwargs={"pk": inactive.pk})
         )
         self.assertEqual(response.status_code, 404)
 
@@ -200,7 +200,7 @@ class OwnerStaffViewsTests(TestCase):
         self.client.force_login(self.owner)
         before = QRToken.objects.filter(staff=self.staff).count()
         response = self.client.post(
-            reverse("owner:staff-qr-issue", pk=self.staff.pk),
+            reverse("owner:staff-qr-issue", kwargs={"pk": self.staff.pk}),
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(QRToken.objects.filter(staff=self.staff).count(), before + 1)
@@ -220,7 +220,7 @@ class OwnerStaffViewsTests(TestCase):
         )
         self.client.force_login(self.owner)
         response = self.client.post(
-            reverse("owner:staff-deactivate", pk=target.pk),
+            reverse("owner:staff-deactivate", kwargs={"pk": target.pk}),
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("owner:staff-list"))
@@ -230,7 +230,7 @@ class OwnerStaffViewsTests(TestCase):
     def test_deactivate_self(self):
         self.client.force_login(self.owner)
         response = self.client.post(
-            reverse("owner:staff-deactivate", pk=self.owner.pk),
+            reverse("owner:staff-deactivate", kwargs={"pk": self.owner.pk}),
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "自分自身を無効化することはできません")
@@ -252,7 +252,7 @@ class OwnerStaffViewsTests(TestCase):
         )
         self.client.force_login(self.owner)
         response_ok = self.client.post(
-            reverse("owner:staff-deactivate", pk=target_owner.pk),
+            reverse("owner:staff-deactivate", kwargs={"pk": target_owner.pk}),
         )
         self.assertEqual(response_ok.status_code, 302)
         self.assertEqual(response_ok.url, reverse("owner:staff-list"))
@@ -280,7 +280,7 @@ class OwnerStaffViewsTests(TestCase):
             is_active=False,
         )
         request = RequestFactory().post(
-            reverse("owner:staff-deactivate", pk=sole_owner.pk)
+            reverse("owner:staff-deactivate", kwargs={"pk": sole_owner.pk})
         )
         request.user = inactive_actor
         view = StaffDeactivateView()
@@ -301,7 +301,7 @@ class OwnerStaffViewsTests(TestCase):
         response = self.client.get(reverse("owner:staff-list"))
         for s in Staff.objects.filter(store=self.store, is_active=True):
             self.assertContains(
-                response, reverse("owner:staff-detail", pk=s.pk)
+                response, reverse("owner:staff-detail", kwargs={"pk": s.pk})
             )
 
     def test_qr_url_displayed_as_link(self):
@@ -312,7 +312,7 @@ class OwnerStaffViewsTests(TestCase):
         )
         self.client.force_login(self.owner)
         response = self.client.get(
-            reverse("owner:staff-detail", pk=self.staff.pk)
+            reverse("owner:staff-detail", kwargs={"pk": self.staff.pk})
         )
         self.assertContains(response, '<a href="/s/login/#token=')
         self.assertContains(response, f"{tok.token}")
