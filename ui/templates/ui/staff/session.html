@@ -1,0 +1,61 @@
+{% extends "ui/base_staff.html" %}
+
+{% block title %}接客{% endblock %}
+
+{% block page_title %}接客{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div
+  x-data="{ memo: '', memoOpen: false, allDone: {% if tasks %}false{% else %}true{% endif %} }"
+  @all-tasks-done.window="allDone = true"
+  class="flex flex-col gap-6 -m-5 min-h-[calc(100vh-44px-56px-40px)] px-5 pb-6 pt-1"
+>
+  {% include "ui/staff/_customer_header.html" %}
+
+  <section>
+    <h2 class="text-lg font-semibold text-text-primary mb-3">ヒアリングタスク</h2>
+    <div x-show="!allDone" x-transition>
+      {% if tasks %}
+        <div class="flex flex-col gap-3">
+          {% for task in tasks %}
+            {% include "ui/staff/_zone_task.html" with task=task config=task.config customer=customer %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+    <div
+      x-show="allDone"
+      x-transition
+      class="text-center text-text-secondary py-8 flex flex-col items-center gap-3"
+    >
+      {% include "ui/icons/check-circle.svg" %}
+      <p class="text-[17px]">全てのヒアリングが完了しています</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="text-lg font-semibold text-text-primary mb-3">会話メモ（来店記録に保存）</h2>
+    {% include "ui/staff/_zone_memo.html" %}
+  </section>
+
+  <section>
+    <div id="visit-button">
+      {% include "ui/staff/_visit_button.html" %}
+    </div>
+  </section>
+
+  <section>
+    <h2 class="text-lg font-semibold text-text-primary mb-3">直近の来店</h2>
+    <div
+      id="recent-visits"
+      hx-get="/s/customers/{{ customer.id }}/session/recent-visits/"
+      hx-trigger="visitCreated from:body"
+      hx-swap="innerHTML"
+      class="rounded-md border border-border-default bg-bg-surface shadow-sm overflow-hidden"
+    >
+      {% include "ui/staff/_recent_visits.html" %}
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% load static %}
+
+<div
+  id="customer-header"
+  hx-get="/s/customers/{{ customer.id }}/session/header/"
+  hx-trigger="visitCreated from:body"
+  hx-swap="outerHTML"
+  class="rounded-md border border-border-default bg-bg-surface p-5 mb-4 shadow-sm"
+>
+  <div class="flex items-start justify-between gap-3 mb-2">
+    <span class="text-[17px] font-medium text-text-primary truncate">{{ customer.name }}</span>
+    {% if customer.segment == "new" %}
+      <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent-subtle text-accent badge-new">{{ customer.segment_display }}</span>
+    {% elif customer.segment == "repeat" %}
+      <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-subtle text-warning-dark badge-repeat">{{ customer.segment_display }}</span>
+    {% elif customer.segment == "regular" %}
+      <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-subtle text-success badge-regular">{{ customer.segment_display }}</span>
+    {% else %}
+      <span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-bg-inset text-text-secondary badge-{{ customer.segment }}">{{ customer.segment_display }}</span>
+    {% endif %}
+  </div>
+  <div class="text-sm text-text-secondary">
+    <span>来店 {{ customer.visit_count }} 回</span>
+    {% if last_visited_at %}
+      <span>・最終 {{ last_visited_at|date:"n/j" }}</span>
+    {% endif %}
+  </div>
+</div>

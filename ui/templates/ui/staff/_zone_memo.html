@@ -1,0 +1,24 @@
+{% load static %}
+
+<div class="rounded-md border border-border-default bg-bg-surface shadow-sm overflow-hidden">
+  <button type="button" class="w-full text-left p-4 flex flex-col gap-1" @click="memoOpen = !memoOpen">
+    <span class="font-medium text-text-primary">メモ</span>
+    <template x-if="memo">
+      <span class="text-sm text-text-secondary" x-text="memo.substring(0, 30) + (memo.length > 30 ? '...' : '')"></span>
+    </template>
+    <template x-if="!memo">
+      <span class="text-sm text-text-secondary">タップして入力 ▸</span>
+    </template>
+  </button>
+  <div x-show="memoOpen" x-transition x-cloak class="px-4 pb-4 flex flex-col gap-2 border-t border-border-default" style="display: none;">
+    <textarea
+      x-model="memo"
+      placeholder="接客中の会話メモを入力..."
+      rows="4"
+      class="w-full border border-border-default rounded-sm p-3 text-[17px] bg-bg-surface text-text-primary mt-3"
+    ></textarea>
+    <button type="button" @click="memoOpen = false" class="py-2 rounded-md border border-border-default text-text-primary font-medium text-sm">
+      完了
+    </button>
+  </div>
+</div>

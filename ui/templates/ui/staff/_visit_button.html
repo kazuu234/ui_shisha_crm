@@ -1,0 +1,20 @@
+{% load static %}
+
+{% if error %}
+  <div class="rounded-sm p-3 mb-2 bg-error-subtle text-error text-sm">
+    <p>{{ error }}</p>
+  </div>
+{% endif %}
+
+{% if customer %}
+  <button
+    type="button"
+    hx-post="/s/visits/create/"
+    :hx-vals="JSON.stringify({customer_id: '{{ customer.id }}', conversation_memo: memo})"
+    hx-target="#visit-button"
+    hx-swap="innerHTML"
+    class="w-full py-3 rounded-md bg-accent text-text-inverse font-medium text-[17px] hover:bg-accent-hover active:bg-accent-active transition-colors"
+  >
+    来店記録を作成する
+  </button>
+{% endif %}
