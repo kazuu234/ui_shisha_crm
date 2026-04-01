@@ -14,6 +14,11 @@ from ui.owner.views.staff_mgmt import (
     StaffQRIssueView,
 )
 from ui.owner.views.stub import StubDashboardView
+from ui.owner.views.segment import (
+    SegmentApplyView,
+    SegmentPreviewView,
+    SegmentSettingsView,
+)
 from ui.owner.views.visit import (
     VisitDeleteView,
     VisitEditView,
@@ -56,5 +61,20 @@ urlpatterns = [
         "visits/<uuid:pk>/delete/",
         VisitDeleteView.as_view(),
         name="visit-delete",
+    ),
+    path(
+        "segments/settings/",
+        SegmentSettingsView.as_view(),
+        name="segment-settings",
+    ),
+    path(
+        "segments/preview/",
+        SegmentPreviewView.as_view(),
+        name="segment-preview",
+    ),
+    path(
+        "segments/apply/",
+        SegmentApplyView.as_view(),
+        name="segment-apply",
     ),
 ]

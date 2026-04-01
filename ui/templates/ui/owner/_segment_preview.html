@@ -1,0 +1,77 @@
+{% if preview_error %}
+  {% if apply_error %}
+    <div class="rounded-sm border border-error/20 bg-error-subtle text-error p-4 text-sm" role="alert">
+      <p>閾値の更新に失敗しました: {{ apply_error }}</p>
+    </div>
+  {% elif formset %}
+    <div class="rounded-sm border border-error/20 bg-error-subtle text-error p-4 text-sm" role="alert">
+      <p>入力内容にエラーがあります。</p>
+      {% if formset.non_form_errors %}
+        {% for error in formset.non_form_errors %}
+          <p>{{ error }}</p>
+        {% endfor %}
+      {% endif %}
+      {% for form in formset %}
+        {% for field, errors in form.errors.items %}
+          {% for error in errors %}
+            <p>{{ error }}</p>
+          {% endfor %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  {% endif %}
+{% else %}
+  <div class="rounded-sm border border-border-default bg-bg-surface p-6 shadow-sm">
+    <h3 class="text-base font-semibold text-text-primary mb-3">プレビュー結果</h3>
+    <p class="text-[15px] text-text-primary mb-6">
+      この変更で <strong>{{ affected_count }}</strong> 件の顧客のセグメントが変わります。
+    </p>
+
+    <div class="overflow-x-auto rounded-sm border border-border-default mb-6">
+      <table class="min-w-full text-sm text-text-primary">
+        <thead class="bg-bg-surface-alt text-left text-text-secondary">
+          <tr>
+            <th class="px-4 py-3 font-medium">セグメント</th>
+            <th class="px-4 py-3 font-medium">変更後の顧客数</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border-default">
+          <tr>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium bg-accent-subtle text-accent">新規</span>
+            </td>
+            <td class="px-4 py-3">{{ segment_counts.new }} 件</td>
+          </tr>
+          <tr>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium bg-warning-subtle text-warning-dark">リピート</span>
+            </td>
+            <td class="px-4 py-3">{{ segment_counts.repeat }} 件</td>
+          </tr>
+          <tr>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium bg-success-subtle text-success">常連</span>
+            </td>
+            <td class="px-4 py-3">{{ segment_counts.regular }} 件</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex flex-wrap gap-4">
+      <button
+        type="button"
+        class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium bg-accent text-text-inverse hover:bg-accent-hover"
+        hx-post="{% url 'owner:segment-apply' %}"
+        hx-include="#threshold-form"
+        hx-target="#preview-zone"
+        hx-swap="innerHTML"
+      >確定</button>
+      <button
+        type="button"
+        class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium border border-border-strong text-text-primary bg-bg-surface hover:bg-bg-surface-alt"
+        @click="previewShown = false; document.getElementById('preview-zone').innerHTML = ''"
+      >キャンセル</button>
+    </div>
+  </div>
+{% endif %}
