@@ -1,0 +1,63 @@
+{% extends "ui/base_owner.html" %}
+{% load static %}
+
+{% block page_title %}来店記録{% endblock %}
+
+{% block modal %}
+<div
+  x-data="{ open: false, deleteId: '', customerName: '', visitDate: '' }"
+  @open-delete-modal.window="open = true; deleteId = $event.detail.id; customerName = $event.detail.name; visitDate = $event.detail.date"
+  x-show="open"
+  x-transition
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+>
+  <div
+    class="bg-bg-surface rounded-md p-6 shadow-xl max-w-md w-full mx-4"
+    @click.outside="open = false"
+  >
+    <h3 class="text-lg font-semibold text-text-primary mb-2">来店記録の削除</h3>
+    <p class="text-text-primary text-[15px] mb-1">
+      <span x-text="visitDate"></span> の <span x-text="customerName"></span> の来店記録を削除しますか？
+    </p>
+    <p class="text-text-secondary text-sm mb-4">
+      削除すると来店回数とセグメントが再計算されます。
+    </p>
+    <div class="flex gap-4">
+      <form method="post" :action="'/o/visits/' + deleteId + '/delete/'">
+        {% csrf_token %}
+        <button
+          type="submit"
+          class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium bg-error text-text-inverse hover:bg-error/80"
+        >削除</button>
+      </form>
+      <button
+        type="button"
+        class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium border border-border-strong text-text-primary bg-bg-surface hover:bg-bg-surface-alt"
+        @click="open = false"
+      >キャンセル</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block toast %}
+  {% if toast %}
+    <div
+      x-data="{ show: true }"
+      x-show="show"
+      x-init="setTimeout(() => { show = false }, 3000)"
+      x-transition
+      class="pointer-events-auto fixed inset-x-0 bottom-6 z-[60] mx-auto flex max-w-md justify-center px-4"
+    >
+      <div class="w-full rounded-md border border-success bg-success-subtle px-4 py-3 text-sm text-success shadow-lg">
+        {{ toast.message }}
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <div id="visit-list-container">
+    {% include "ui/owner/_visit_table.html" %}
+  </div>
+{% endblock %}
