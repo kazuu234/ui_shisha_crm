@@ -79,7 +79,30 @@
 
 {% block modal %}{% endblock %}
 
-<div x-data="{ show: false, message: '', type: 'success' }">
-  {% block toast %}{% endblock %}
+<div
+  x-data="{ show: false, message: '', type: 'success' }"
+  x-init="
+    document.body.addEventListener('showToast', (e) => {
+      const d = e.detail || {};
+      message = d.message || '';
+      type = d.type || 'success';
+      show = true;
+      clearTimeout(window.__ownerToastT);
+      window.__ownerToastT = setTimeout(() => { show = false; }, 4000);
+    });
+  "
+  class="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4"
+>
+  {% block toast %}
+    <div
+      x-show="show"
+      x-transition
+      x-cloak
+      class="pointer-events-auto max-w-md rounded-md px-4 py-3 text-sm shadow-lg border"
+      :class="type === 'error' ? 'bg-error-subtle border-error text-error' : 'bg-success-subtle border-success text-success'"
+      style="display: none;"
+      x-text="message"
+    ></div>
+  {% endblock %}
 </div>
 {% endblock %}

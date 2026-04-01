@@ -465,18 +465,6 @@ class OwnerCsvImportViewsTests(TestCase):
         )
         self.assertContains(response, 'text-text-muted">-</span>')
 
-    def test_csv_import_rows_matching_button_hidden_slice1(self):
-        imp = CsvImport.objects.create(
-            store=self.store,
-            file_name="r.csv",
-            status=CsvImport.STATUS_COMPLETED,
-            row_count=0,
-        )
-        response = self.client.get(
-            reverse("owner:csv-import-rows", kwargs={"pk": imp.pk})
-        )
-        self.assertNotContains(response, "マッチング実行")
-
     def test_csv_import_rows_toast_display(self):
         imp = CsvImport.objects.create(
             store=self.store,

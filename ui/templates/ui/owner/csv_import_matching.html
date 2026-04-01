@@ -1,0 +1,45 @@
+{% extends "ui/base_owner.html" %}
+{% load static %}
+
+{% block page_title %}マッチング管理{% endblock %}
+
+{% block extra_js %}
+  {% if toast %}
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        document.body.dispatchEvent(
+          new CustomEvent("showToast", {
+            detail: {
+              message: "{{ toast.message|escapejs }}",
+              type: "{{ toast.type|escapejs }}",
+            },
+          })
+        );
+      });
+    </script>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl flex flex-col gap-6">
+  <div>
+    <h2 class="text-base font-semibold text-text-primary">{{ csv_import.file_name }} - マッチング</h2>
+    <p class="text-text-secondary text-sm mt-1">レビュー待ち: {{ rows|length }} 件</p>
+  </div>
+
+  <section class="rounded-md border border-border-default bg-bg-surface shadow-sm overflow-hidden">
+    {% for row in rows %}
+      {% include "ui/owner/_matching_row.html" with row=row %}
+    {% empty %}
+      <div class="text-center text-text-secondary py-8 px-5">
+        <p>マッチ待ちの明細はありません</p>
+      </div>
+    {% endfor %}
+  </section>
+
+  <div class="mt-2 flex gap-4">
+    <a href="/o/imports/{{ csv_import.pk }}/rows/" class="text-accent text-sm font-medium hover:text-accent-hover">← 行一覧に戻る</a>
+    <a href="/o/imports/upload/" class="text-accent text-sm font-medium hover:text-accent-hover">アップロード画面に戻る</a>
+  </div>
+</div>
+{% endblock %}
