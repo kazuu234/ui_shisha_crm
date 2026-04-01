@@ -55,6 +55,7 @@ class SessionFlowTests(TestCase):
         c = Customer.objects.create(store=self.store, name="ヘッダー太郎", segment="new")
         response = self.client.get(self._session_url(c))
         self.assertContains(response, "ヘッダー太郎")
+        self.assertContains(response, f'href="/s/customers/{c.pk}/"')
         self.assertContains(response, "badge-new")
         self.assertContains(response, "来店")
 
