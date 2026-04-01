@@ -1,0 +1,121 @@
+{% extends "ui/base_owner.html" %}
+{% load static %}
+
+{% block page_title %}インポート詳細{% endblock %}
+
+{% block toast %}
+  {% if toast %}
+    <div
+      x-data="{ show: true }"
+      x-show="show"
+      x-init="setTimeout(() => { show = false }, 3000)"
+      x-transition
+      class="pointer-events-auto fixed inset-x-0 bottom-6 z-[60] mx-auto flex max-w-md justify-center px-4"
+    >
+      {% if toast.type == "error" %}
+        <div class="w-full rounded-md border border-error bg-error-subtle px-4 py-3 text-sm text-error shadow-lg">
+          {{ toast.message }}
+        </div>
+      {% else %}
+        <div class="w-full rounded-md border border-success bg-success-subtle px-4 py-3 text-sm text-success shadow-lg">
+          {{ toast.message }}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl flex flex-col gap-6">
+  <section class="rounded-md border border-border-default bg-bg-surface p-6 shadow-sm">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <h2 class="text-base font-semibold text-text-primary">{{ csv_import.file_name }}</h2>
+        <p class="text-text-secondary text-sm mt-2 flex flex-wrap items-center gap-2">
+          {% if csv_import.status == "completed" %}
+            <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium badge-confirmed bg-success-subtle text-success">完了</span>
+          {% elif csv_import.status == "failed" %}
+            <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium badge-rejected bg-error-subtle text-error">失敗</span>
+          {% endif %}
+          <span>{{ csv_import.created_at|date:"Y/m/d H:i" }} ・ {{ csv_import.row_count }} 件</span>
+        </p>
+      </div>
+
+      {% if matching_enabled %}
+        <form method="post" action="/o/imports/{{ csv_import.pk }}/matching/execute/">
+          {% csrf_token %}
+          <button type="submit" class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium bg-accent text-text-inverse hover:bg-accent-hover">
+            マッチング実行
+          </button>
+        </form>
+      {% endif %}
+    </div>
+
+    {% if csv_import.error_message %}
+      <div class="rounded-md bg-warning-subtle text-warning-dark p-4 mt-4 text-sm">
+        {% if csv_import.status == "failed" %}
+          <p class="font-medium">全件不正のためインポートに失敗しました:</p>
+        {% else %}
+          <p class="font-medium">一部の取引データがスキップされました:</p>
+        {% endif %}
+        <ul class="list-disc ml-4 mt-2 space-y-1">
+          {% for err in csv_import.error_message %}
+            <li>取引No {{ err.receipt_no }}（CSV {{ err.lines|join:", " }} 行目）: {{ err.error }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="rounded-md border border-border-default bg-bg-surface shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm text-text-primary">
+        <thead class="bg-bg-surface-alt text-left text-text-secondary">
+          <tr>
+            <th class="px-4 py-3 font-medium">行番号</th>
+            <th class="px-4 py-3 font-medium">営業日</th>
+            <th class="px-4 py-3 font-medium">レシート番号</th>
+            <th class="px-4 py-3 font-medium">ステータス</th>
+            <th class="px-4 py-3 font-medium">マッチ先</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border-default bg-bg-surface">
+          {% for row in rows %}
+            <tr>
+              <td class="px-4 py-3">{{ row.row_number }}</td>
+              <td class="px-4 py-3">{{ row.business_date|date:"Y/m/d" }}</td>
+              <td class="px-4 py-3">{{ row.receipt_no }}</td>
+              <td class="px-4 py-3">
+                {% if row.status == "validated" %}
+                  <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium bg-accent-subtle text-accent">検証済み</span>
+                {% elif row.status == "pending_review" %}
+                  <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium bg-warning-subtle text-warning-dark">レビュー待ち</span>
+                {% elif row.status == "confirmed" %}
+                  <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium bg-success-subtle text-success">確定済み</span>
+                {% elif row.status == "rejected" %}
+                  <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium bg-error-subtle text-error">却下</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
+                {% if row.matched_visit %}
+                  {{ row.matched_visit.customer.name }}
+                {% else %}
+                  <span class="text-text-muted">-</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="px-4 py-8 text-center text-text-secondary">インポートデータがありません</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="mt-2">
+    <a href="{% url 'owner:csv-upload' %}" class="text-accent text-sm font-medium hover:text-accent-hover">← アップロード画面に戻る</a>
+  </div>
+</div>
+{% endblock %}

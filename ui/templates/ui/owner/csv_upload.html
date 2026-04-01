@@ -1,0 +1,84 @@
+{% extends "ui/base_owner.html" %}
+{% load static %}
+
+{% block page_title %}Airレジ連携{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl flex flex-col gap-10">
+  <section class="rounded-md border border-border-default bg-bg-surface p-6 shadow-sm">
+    <h2 class="text-base font-semibold text-text-primary mb-4">CSV アップロード</h2>
+
+    <form method="post" enctype="multipart/form-data" class="flex flex-col gap-6">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="rounded-md bg-error-subtle p-4 text-error mb-2">
+          {% for error in form.non_field_errors %}
+            <p class="text-sm">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="flex flex-col gap-1">
+        <label class="text-sm text-text-secondary" for="{{ form.file.id_for_label }}">{{ form.file.label }}</label>
+        {{ form.file }}
+        {% if form.file.help_text %}
+          <p class="text-text-secondary text-sm mt-1">{{ form.file.help_text }}</p>
+        {% endif %}
+        {% if form.file.errors %}
+          <p class="text-sm text-error">{{ form.file.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium bg-accent text-text-inverse hover:bg-accent-hover w-fit">
+        アップロード
+      </button>
+    </form>
+  </section>
+
+  <section class="rounded-md border border-border-default bg-bg-surface p-6 shadow-sm">
+    <h2 class="text-base font-semibold text-text-primary mb-4">インポート履歴</h2>
+
+    {% if recent_imports %}
+      <div class="overflow-x-auto rounded-sm border border-border-default">
+        <table class="min-w-full text-sm text-text-primary">
+          <thead class="bg-bg-surface-alt text-left text-text-secondary">
+            <tr>
+              <th class="px-4 py-3 font-medium">ファイル名</th>
+              <th class="px-4 py-3 font-medium">ステータス</th>
+              <th class="px-4 py-3 font-medium">行数</th>
+              <th class="px-4 py-3 font-medium">日時</th>
+              <th class="px-4 py-3 font-medium"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border-default bg-bg-surface">
+            {% for imp in recent_imports %}
+              <tr>
+                <td class="px-4 py-3">{{ imp.file_name }}</td>
+                <td class="px-4 py-3">
+                  {% if imp.status == "completed" %}
+                    <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium badge-confirmed bg-success-subtle text-success">完了</span>
+                  {% elif imp.status == "failed" %}
+                    <span class="inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium badge-rejected bg-error-subtle text-error">失敗</span>
+                  {% endif %}
+                </td>
+                <td class="px-4 py-3">{{ imp.row_count }} 件</td>
+                <td class="px-4 py-3">{{ imp.created_at|date:"Y/m/d H:i" }}</td>
+                <td class="px-4 py-3">
+                  {% if imp.status == "completed" %}
+                    <a href="{% url 'owner:csv-import-rows' imp.pk %}" class="text-accent text-sm font-medium hover:text-accent-hover">詳細</a>
+                  {% elif imp.status == "failed" %}
+                    <a href="{% url 'owner:csv-import-rows' imp.pk %}" class="text-accent text-sm font-medium hover:text-accent-hover">エラー詳細</a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-text-secondary text-sm">インポート履歴はありません</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
