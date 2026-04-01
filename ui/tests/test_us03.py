@@ -1,3 +1,4 @@
+import json
 import uuid
 from datetime import date, timedelta
 from unittest.mock import patch
@@ -324,7 +325,7 @@ class US03CustomerEditFieldTests(TestCase):
         c = Customer.objects.create(store=self.store, name="保持")
         response = self._patch(c, "name", "")
         self.assertEqual(response.status_code, 422)
-        self.assertContains(response, "名前を入力してください")
+        self.assertContains(response, "名前を入力してください", status_code=422)
 
     def test_edit_field_name_whitespace_rejected(self):
         c = Customer.objects.create(store=self.store, name="保持2")
@@ -349,7 +350,7 @@ class US03CustomerEditFieldTests(TestCase):
         c = Customer.objects.create(store=self.store, name="BadAge")
         response = self._patch(c, "age", "invalid")
         self.assertEqual(response.status_code, 422)
-        self.assertContains(response, "年齢は整数で入力してください")
+        self.assertContains(response, "年齢は整数で入力してください", status_code=422)
 
     def test_edit_field_age_clear(self):
         c = Customer.objects.create(store=self.store, name="ClearAge", age=10)
@@ -362,7 +363,7 @@ class US03CustomerEditFieldTests(TestCase):
         c = Customer.objects.create(store=self.store, name="Range")
         response = self._patch(c, "age", "200")
         self.assertEqual(response.status_code, 422)
-        self.assertContains(response, "年齢は 0〜150 の範囲で入力してください")
+        self.assertContains(response, "年齢は 0〜150 の範囲で入力してください", status_code=422)
 
     def test_edit_field_area_patch(self):
         c = Customer.objects.create(store=self.store, name="Area")
@@ -453,9 +454,10 @@ class US03CustomerEditFieldTests(TestCase):
         c = Customer.objects.create(store=self.store, name="Toast")
         response = self._patch(c, "name", "Toast2")
         self.assertEqual(response.status_code, 200)
-        trigger = response.headers.get("HX-Trigger", "")
-        self.assertIn("保存しました", trigger)
-        self.assertIn("showToast", trigger)
+        trigger_raw = response.headers.get("HX-Trigger", "")
+        payload = json.loads(trigger_raw)
+        self.assertEqual(payload["showToast"]["message"], "保存しました")
+        self.assertEqual(payload["showToast"]["type"], "success")
 
     def test_edit_field_returns_zone_fragment(self):
         c = Customer.objects.create(store=self.store, name="Frag")
@@ -514,8 +516,8 @@ class US03CustomerEditFieldTests(TestCase):
         c = Customer.objects.create(store=self.store, name="Val")
         response = self._patch(c, "age", "not-int")
         self.assertEqual(response.status_code, 422)
-        self.assertContains(response, 'id="zone-age"')
-        self.assertContains(response, "年齢は整数で入力してください")
+        self.assertContains(response, 'id="zone-age"', status_code=422)
+        self.assertContains(response, "年齢は整数で入力してください", status_code=422)
 
 
 class US03VisitListTests(TestCase):
