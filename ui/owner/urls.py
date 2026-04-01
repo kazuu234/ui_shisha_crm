@@ -19,6 +19,7 @@ from ui.owner.views.segment import (
     SegmentPreviewView,
     SegmentSettingsView,
 )
+from ui.owner.views.csv_import import CsvImportRowListView, CsvUploadView
 from ui.owner.views.visit import (
     VisitDeleteView,
     VisitEditView,
@@ -76,5 +77,11 @@ urlpatterns = [
         "segments/apply/",
         SegmentApplyView.as_view(),
         name="segment-apply",
+    ),
+    path("imports/upload/", CsvUploadView.as_view(), name="csv-upload"),
+    path(
+        "imports/<uuid:pk>/rows/",
+        CsvImportRowListView.as_view(),
+        name="csv-import-rows",
     ),
 ]
