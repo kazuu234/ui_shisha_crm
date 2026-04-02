@@ -5,6 +5,7 @@ import { STAFF_TOKEN_FLOW2, CUSTOMER_NAME } from '../fixtures/test-data';
 
 test.describe.serial('Flow 2: staff session', () => {
   let page: Page | undefined;
+  let recentVisitsHtmlBeforeCreate = '';
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
@@ -65,6 +66,8 @@ test.describe.serial('Flow 2: staff session', () => {
 
   test('test_visit_create_with_toast', async () => {
     if (!page) throw new Error('page not initialized');
+    const recent = page.locator('#recent-visits');
+    recentVisitsHtmlBeforeCreate = await recent.innerHTML();
     await Promise.all([
       page.waitForResponse(
         (r) =>
@@ -82,6 +85,8 @@ test.describe.serial('Flow 2: staff session', () => {
   test('test_recent_visits_updated', async () => {
     if (!page) throw new Error('page not initialized');
     const recent = page.locator('#recent-visits');
+    const afterHtml = await recent.innerHTML();
+    expect(afterHtml).not.toBe(recentVisitsHtmlBeforeCreate);
 
     const todayStr = await page.evaluate(() => {
       const d = new Date();
