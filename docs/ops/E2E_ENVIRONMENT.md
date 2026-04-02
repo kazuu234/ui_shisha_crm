@@ -90,27 +90,49 @@ python manage.py shell -c "
 from tenants.models import Store
 from accounts.models import Staff, QRToken
 from customers.models import Customer
+from tasks.models import HearingTask
+from tasks.services import HearingTaskService
 from django.utils import timezone
 from datetime import timedelta
 
+# E2E 環境は通常 seed_store により Store が 1 件のみである前提。複数 Store がある DB では
+# first() の選択順に依存するため、本番相当の複数店舗 DB では name/pk 明示が必要な場合がある。
 store = Store.objects.first()
+if store is None:
+    raise RuntimeError('Store が見つかりません。先に Store を作成してください。')
+print(f'Using store: {store.name} (pk={store.pk})')
 
 # Owner（E2E フロー 3 用）
-owner, _ = Staff.objects.get_or_create(
+owner, created = Staff.objects.get_or_create(
     store=store,
     display_name='E2E Owner',
-    defaults={'staff_type': 'owner', 'is_active': True},
+    defaults={'staff_type': 'owner', 'role': 'owner', 'is_active': True},
 )
+if not created:
+    owner.staff_type = 'owner'
+    owner.role = 'owner'
+    owner.is_active = True
+    owner.save(update_fields=['staff_type', 'role', 'is_active'])
 
 # Staff（E2E フロー 1, 2 用）
-staff, _ = Staff.objects.get_or_create(
+staff, created = Staff.objects.get_or_create(
     store=store,
     display_name='E2E Staff',
-    defaults={'staff_type': 'staff', 'is_active': True},
+    defaults={'staff_type': 'regular', 'role': 'staff', 'is_active': True},
 )
+if not created:
+    staff.staff_type = 'regular'
+    staff.role = 'staff'
+    staff.is_active = True
+    staff.save(update_fields=['staff_type', 'role', 'is_active'])
 
-# QR Token（ログインテスト用）
-staff_token = QRToken.objects.create(
+# QR Token（ログインテスト用 — Flow 1 用と Flow 2 用の 2 つ）
+staff_token_1 = QRToken.objects.create(
+    staff=staff,
+    token=QRToken.generate_token(),
+    expires_at=timezone.now() + timedelta(hours=24),
+)
+staff_token_2 = QRToken.objects.create(
     staff=staff,
     token=QRToken.generate_token(),
     expires_at=timezone.now() + timedelta(hours=24),
@@ -121,12 +143,15 @@ owner_token = QRToken.objects.create(
     expires_at=timezone.now() + timedelta(hours=24),
 )
 
-print(f'Staff token: {staff_token.token}')
+print(f'Staff token (Flow 1): {staff_token_1.token}')
+print(f'Staff token (Flow 2): {staff_token_2.token}')
 print(f'Owner token: {owner_token.token}')
-print('Save these tokens for Playwright tests.')
+print('Save these tokens in e2e/fixtures/test-data.ts (STAFF_TOKEN, STAFF_TOKEN_FLOW2, OWNER_TOKEN).')
 
-# Customer（E2E フロー 2 用）
-customer, _ = Customer.objects.get_or_create(
+# Customer（E2E フロー 2 用）— フィールドをリセットしタスクを再生成
+# get_or_create だけでは HearingTask は付かないため generate_tasks が必要。
+# 再実行時は age/area/shisha_experience が埋まっているとタスクゾーンが出ないためリセットする。
+customer, created = Customer.objects.get_or_create(
     store=store,
     name='E2E Customer',
     defaults={
@@ -135,7 +160,18 @@ customer, _ = Customer.objects.get_or_create(
         'shisha_experience': None,
     },
 )
-print(f'Customer: {customer.pk}')
+if not created:
+    customer.age = None
+    customer.area = None
+    customer.shisha_experience = None
+    customer.save(update_fields=['age', 'area', 'shisha_experience'])
+
+# 既存タスクを消してから Open タスクを生成（headless: HearingTaskService に reset_tasks は無い）
+HearingTask.objects.filter(customer=customer).delete()
+HearingTaskService.generate_tasks(customer, request=None)
+
+print(f'Customer: {customer.pk} (hearing tasks regenerated)')
+print('Set CUSTOMER_ID in test-data.ts to the Customer UUID printed above for flow2 link selection.')
 "
 ```
 
@@ -155,9 +191,9 @@ print(f'Customer: {customer.pk}')
 ui_shisha_crm/
   e2e/                         # Playwright テストディレクトリ
     flows/
-      staff-login.spec.ts      # フロー 1: スタッフ QR ログイン
-      staff-session.spec.ts    # フロー 2: 顧客検索→接客→タスク消化→来店記録
-      owner-dashboard.spec.ts  # フロー 3: オーナーログイン→ダッシュボード
+      flow1-staff-login.spec.ts      # フロー 1: スタッフ QR ログイン
+      flow2-staff-session.spec.ts    # フロー 2: 顧客検索→接客→タスク消化→来店記録
+      flow3-owner-dashboard.spec.ts  # フロー 3: オーナーログイン→ダッシュボード
     fixtures/
       test-data.ts             # テストデータ（token, customer ID 等）
     helpers/
@@ -216,7 +252,7 @@ cd /var/share/yorusaro/src/ui_shisha_crm
 npx playwright test
 
 # 特定フロー
-npx playwright test e2e/flows/staff-login.spec.ts
+npx playwright test e2e/flows/flow1-staff-login.spec.ts
 
 # headed モード（ブラウザを表示して実行）
 npx playwright test --headed
@@ -256,3 +292,5 @@ MVP では手動実行。将来的に GitHub Actions に組み込む場合の考
 ## Review Log
 
 - [2026-04-02] 初版作成
+- [2026-04-02] Issue #30 R12: E2E Customer のヒアリングフィールドリセット + `HearingTask` 削除後 `HearingTaskService.generate_tasks`（headless `tasks.services`）。Flow 2 の検索結果クリックを `CUSTOMER_ID` 指定に合わせて手順書に追記。
+- [2026-04-02] Issue #30 R16: seed スクリプトの `Store.objects.first()` に fail-fast（Store 未作成時は `RuntimeError`）、使用店舗のログ出力、E2E が通常 1 Store 前提である旨のコメントを追加。
