@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import type { BrowserContext, Page } from '@playwright/test';
 
-import { STAFF_TOKEN_FLOW2, CUSTOMER_NAME } from '../fixtures/test-data';
+import { STAFF_TOKEN_FLOW2, CUSTOMER_NAME, CUSTOMER_ID } from '../fixtures/test-data';
 
 const BASE_URL = 'http://localhost:8000';
 const TZ = 'Asia/Tokyo';
@@ -35,7 +35,7 @@ test.describe.serial('Flow 2: staff session', () => {
 
   test('test_navigate_to_session', async () => {
     if (!page) throw new Error('page not initialized');
-    await page.locator('#search-results a[href*="/session/"]').first().click();
+    await page.locator(`#search-results a[href*="${CUSTOMER_ID}"]`).click();
     await page.waitForURL('**/session/**');
     await expect(page.getByRole('heading', { name: 'ヒアリングタスク' })).toBeVisible();
   });
