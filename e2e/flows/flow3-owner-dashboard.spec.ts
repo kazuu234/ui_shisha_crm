@@ -1,7 +1,10 @@
 import { test, expect } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 
 import { OWNER_TOKEN } from '../fixtures/test-data';
+
+const BASE_URL = 'http://localhost:8000';
+const TZ = 'Asia/Tokyo';
 
 async function expectThreeChartsRendered(page: Page): Promise<void> {
   const canvases = page.locator('canvas');
@@ -26,15 +29,17 @@ async function expectThreeChartsRendered(page: Page): Promise<void> {
 
 test.describe.serial('Flow 3: owner dashboard', () => {
   let page: Page | undefined;
+  let context: BrowserContext | undefined;
 
   test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage();
+    context = await browser.newContext({ baseURL: BASE_URL, timezoneId: TZ });
+    page = await context.newPage();
     await page.goto(`/o/login/#token=${OWNER_TOKEN}`);
     await page.waitForURL('**/o/dashboard/**');
   });
 
   test.afterAll(async () => {
-    await page?.close();
+    await context?.close();
   });
 
   test('test_owner_qr_login', async () => {

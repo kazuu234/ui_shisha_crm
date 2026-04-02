@@ -1,20 +1,25 @@
 import { test, expect } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 
 import { STAFF_TOKEN_FLOW2, CUSTOMER_NAME } from '../fixtures/test-data';
 
+const BASE_URL = 'http://localhost:8000';
+const TZ = 'Asia/Tokyo';
+
 test.describe.serial('Flow 2: staff session', () => {
   let page: Page | undefined;
+  let context: BrowserContext | undefined;
   let recentVisitsHtmlBeforeCreate = '';
 
   test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage();
+    context = await browser.newContext({ baseURL: BASE_URL, timezoneId: TZ });
+    page = await context.newPage();
     await page.goto(`/s/login/#token=${STAFF_TOKEN_FLOW2}`);
     await page.waitForURL('**/s/customers/**');
   });
 
   test.afterAll(async () => {
-    await page?.close();
+    await context?.close();
   });
 
   test('test_customer_search_htmx', async () => {

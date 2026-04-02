@@ -1,19 +1,24 @@
 import { test, expect } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 
 import { STAFF_TOKEN } from '../fixtures/test-data';
 
+const BASE_URL = 'http://localhost:8000';
+const TZ = 'Asia/Tokyo';
+
 test.describe.serial('Flow 1: staff QR login', () => {
   let page: Page | undefined;
+  let context: BrowserContext | undefined;
 
   test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage();
+    context = await browser.newContext({ baseURL: BASE_URL, timezoneId: TZ });
+    page = await context.newPage();
     await page.goto(`/s/login/#token=${STAFF_TOKEN}`);
     await page.waitForURL('**/s/customers/**');
   });
 
   test.afterAll(async () => {
-    await page?.close();
+    await context?.close();
   });
 
   test('test_qr_link_auto_login', async () => {
@@ -46,7 +51,7 @@ test.describe.serial('Flow 1: staff QR login', () => {
 });
 
 test('test_unauthenticated_redirect', async ({ browser }) => {
-  const context = await browser.newContext();
+  const context = await browser.newContext({ baseURL: BASE_URL, timezoneId: TZ });
   const fresh = await context.newPage();
   await fresh.goto('/s/customers/');
   await fresh.waitForURL('**/s/login/**');
