@@ -98,18 +98,28 @@ from datetime import timedelta
 store = Store.objects.first()
 
 # Owner（E2E フロー 3 用）
-owner, _ = Staff.objects.get_or_create(
+owner, created = Staff.objects.get_or_create(
     store=store,
     display_name='E2E Owner',
-    defaults={'staff_type': 'owner', 'is_active': True},
+    defaults={'staff_type': 'owner', 'role': 'owner', 'is_active': True},
 )
+if not created:
+    owner.staff_type = 'owner'
+    owner.role = 'owner'
+    owner.is_active = True
+    owner.save(update_fields=['staff_type', 'role', 'is_active'])
 
 # Staff（E2E フロー 1, 2 用）
-staff, _ = Staff.objects.get_or_create(
+staff, created = Staff.objects.get_or_create(
     store=store,
     display_name='E2E Staff',
-    defaults={'staff_type': 'staff', 'is_active': True},
+    defaults={'staff_type': 'staff', 'role': 'staff', 'is_active': True},
 )
+if not created:
+    staff.staff_type = 'staff'
+    staff.role = 'staff'
+    staff.is_active = True
+    staff.save(update_fields=['staff_type', 'role', 'is_active'])
 
 # QR Token（ログインテスト用 — Flow 1 用と Flow 2 用の 2 つ）
 staff_token_1 = QRToken.objects.create(
@@ -132,7 +142,6 @@ print(f'Staff token (Flow 1): {staff_token_1.token}')
 print(f'Staff token (Flow 2): {staff_token_2.token}')
 print(f'Owner token: {owner_token.token}')
 print('Save these tokens in e2e/fixtures/test-data.ts (STAFF_TOKEN, STAFF_TOKEN_FLOW2, OWNER_TOKEN).')
-print('Set CUSTOMER_ID in test-data.ts to the Customer UUID printed above for flow2 link selection.')
 
 # Customer（E2E フロー 2 用）— フィールドをリセットしタスクを再生成
 # get_or_create だけでは HearingTask は付かないため generate_tasks が必要。
@@ -157,6 +166,7 @@ HearingTask.objects.filter(customer=customer).delete()
 HearingTaskService.generate_tasks(customer, request=None)
 
 print(f'Customer: {customer.pk} (hearing tasks regenerated)')
+print('Set CUSTOMER_ID in test-data.ts to the Customer UUID printed above for flow2 link selection.')
 "
 ```
 
