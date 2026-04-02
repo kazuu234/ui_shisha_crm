@@ -14,6 +14,13 @@ async function expectThreeChartsRendered(page: Page): Promise<void> {
       expect(box!.width).toBeGreaterThan(0);
       expect(box!.height).toBeGreaterThan(0);
     }).toPass({ timeout: 5000 });
+
+    // Chart.js が実際に描画したことを確認
+    // 空の canvas の toDataURL は短い（~100文字）が、描画済みは長い（数千文字）
+    const dataUrlLength = await canvas.evaluate(
+      (el: HTMLCanvasElement) => el.toDataURL().length,
+    );
+    expect(dataUrlLength).toBeGreaterThan(200);
   }
 }
 

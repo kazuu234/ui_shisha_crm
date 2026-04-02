@@ -23,7 +23,10 @@ test.describe.serial('Flow 2: staff session', () => {
     await page.getByRole('button', { name: '顧客を検索' }).click();
     await expect(page.locator('input[name="q"]')).toBeVisible();
     await page.locator('input[name="q"]').fill('E2E');
-    await expect(page.getByText(CUSTOMER_NAME, { exact: false })).toBeVisible({ timeout: 3000 });
+    // #search-results 内に顧客名が表示されることを確認（HTMX 部分更新の検証）
+    await expect(
+      page.locator('#search-results').getByText(CUSTOMER_NAME, { exact: false }),
+    ).toBeVisible({ timeout: 3000 });
   });
 
   test('test_navigate_to_session', async () => {
