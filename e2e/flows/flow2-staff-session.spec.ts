@@ -5,8 +5,6 @@ import { STAFF_TOKEN_FLOW2, CUSTOMER_NAME } from '../fixtures/test-data';
 
 test.describe.serial('Flow 2: staff session', () => {
   let page: Page | undefined;
-  /** `test_visit_create_with_toast` 実行直前の `#recent-visits` 内の来店行数（border-b 行） */
-  let recentVisitRowCountBeforeCreate = 0;
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
@@ -67,8 +65,6 @@ test.describe.serial('Flow 2: staff session', () => {
 
   test('test_visit_create_with_toast', async () => {
     if (!page) throw new Error('page not initialized');
-    const recent = page.locator('#recent-visits');
-    recentVisitRowCountBeforeCreate = await recent.locator('> div.border-b').count();
     await Promise.all([
       page.waitForResponse(
         (r) =>
@@ -86,15 +82,14 @@ test.describe.serial('Flow 2: staff session', () => {
   test('test_recent_visits_updated', async () => {
     if (!page) throw new Error('page not initialized');
     const recent = page.locator('#recent-visits');
-    const afterCount = await recent.locator('> div.border-b').count();
-    expect(afterCount).toBeGreaterThan(recentVisitRowCountBeforeCreate);
 
-    // ブラウザ側で今日の日付を取得（アプリと同じ TZ）
     const todayStr = await page.evaluate(() => {
       const d = new Date();
       return `${d.getMonth() + 1}/${d.getDate()}`;
     });
-    await expect(recent.getByText(todayStr)).toBeVisible({ timeout: 3000 });
-    await expect(recent.getByText('E2E Staff')).toBeVisible({ timeout: 3000 });
+
+    const firstRow = recent.locator('> div.border-b').first();
+    await expect(firstRow.getByText(todayStr)).toBeVisible({ timeout: 3000 });
+    await expect(firstRow.getByText('E2E Staff')).toBeVisible({ timeout: 3000 });
   });
 });

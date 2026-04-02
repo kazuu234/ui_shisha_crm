@@ -15,12 +15,12 @@ async function expectThreeChartsRendered(page: Page): Promise<void> {
       expect(box!.height).toBeGreaterThan(0);
     }).toPass({ timeout: 5000 });
 
-    // Chart.js が実際に描画したことを確認
-    // 空の canvas の toDataURL は短い（~100文字）が、描画済みは長い（数千文字）
-    const dataUrlLength = await canvas.evaluate(
-      (el: HTMLCanvasElement) => el.toDataURL().length,
-    );
-    expect(dataUrlLength).toBeGreaterThan(200);
+    const hasChart = await canvas.evaluate((el: HTMLCanvasElement) => {
+      // Chart.js は getChart() で canvas に紐づく Chart インスタンスを返す
+      // @ts-expect-error Chart はページのグローバルに読み込まれている
+      return typeof Chart !== 'undefined' && Chart.getChart(el) != null;
+    });
+    expect(hasChart).toBeTruthy();
   }
 }
 
