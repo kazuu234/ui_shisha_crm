@@ -29,7 +29,7 @@ test.describe.serial('Flow 2: staff session', () => {
 
   test('test_navigate_to_session', async () => {
     if (!page) throw new Error('page not initialized');
-    await page.locator('a[href*="/session/"]').first().click();
+    await page.locator('#search-results a[href*="/session/"]').first().click();
     await page.waitForURL('**/session/**');
     await expect(page.getByRole('heading', { name: 'ヒアリングタスク' })).toBeVisible();
   });
@@ -56,6 +56,7 @@ test.describe.serial('Flow 2: staff session', () => {
     await expect(zone.locator('.bg-accent-light').filter({ hasText: '20代' })).toBeVisible({
       timeout: 3000,
     });
+    await expect(zone.getByRole('button', { name: /タップして/ })).toHaveCount(0);
   });
 
   test('test_visit_create_with_toast', async () => {

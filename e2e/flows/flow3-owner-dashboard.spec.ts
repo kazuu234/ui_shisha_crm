@@ -46,6 +46,10 @@ test.describe.serial('Flow 3: owner dashboard', () => {
 
   test('test_dashboard_kpi_cards', async () => {
     if (!page) throw new Error('page not initialized');
+    await expect(page.getByText('今日の来客数')).toBeVisible();
+    await expect(page.getByText('今月の来客数')).toBeVisible();
+    await expect(page.getByText('新規率')).toBeVisible();
+    await expect(page.getByText('アクティブ顧客数')).toBeVisible();
     const values = page.locator('p.text-2xl.font-bold.text-text-primary');
     await expect(values).toHaveCount(4);
     for (let i = 0; i < 4; i++) {
