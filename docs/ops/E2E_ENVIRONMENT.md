@@ -176,9 +176,9 @@ print(f'Customer: {customer.pk} (hearing tasks regenerated)')
 ui_shisha_crm/
   e2e/                         # Playwright テストディレクトリ
     flows/
-      staff-login.spec.ts      # フロー 1: スタッフ QR ログイン
-      staff-session.spec.ts    # フロー 2: 顧客検索→接客→タスク消化→来店記録
-      owner-dashboard.spec.ts  # フロー 3: オーナーログイン→ダッシュボード
+      flow1-staff-login.spec.ts      # フロー 1: スタッフ QR ログイン
+      flow2-staff-session.spec.ts    # フロー 2: 顧客検索→接客→タスク消化→来店記録
+      flow3-owner-dashboard.spec.ts  # フロー 3: オーナーログイン→ダッシュボード
     fixtures/
       test-data.ts             # テストデータ（token, customer ID 等）
     helpers/
@@ -237,7 +237,7 @@ cd /var/share/yorusaro/src/ui_shisha_crm
 npx playwright test
 
 # 特定フロー
-npx playwright test e2e/flows/staff-login.spec.ts
+npx playwright test e2e/flows/flow1-staff-login.spec.ts
 
 # headed モード（ブラウザを表示して実行）
 npx playwright test --headed
