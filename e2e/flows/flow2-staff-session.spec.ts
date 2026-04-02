@@ -86,8 +86,11 @@ test.describe.serial('Flow 2: staff session', () => {
     const afterCount = await recent.locator('> div.border-b').count();
     expect(afterCount).toBeGreaterThan(recentVisitRowCountBeforeCreate);
 
-    const today = new Date();
-    const todayStr = `${today.getMonth() + 1}/${today.getDate()}`;
+    // ブラウザ側で今日の日付を取得（アプリと同じ TZ）
+    const todayStr = await page.evaluate(() => {
+      const d = new Date();
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    });
     await expect(recent.getByText(todayStr)).toBeVisible({ timeout: 3000 });
     await expect(recent.getByText('E2E Staff')).toBeVisible({ timeout: 3000 });
   });
