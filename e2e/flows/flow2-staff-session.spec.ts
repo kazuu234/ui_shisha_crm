@@ -1,17 +1,14 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
-import { STAFF_TOKEN, CUSTOMER_NAME } from '../fixtures/test-data';
-
-/** Flow 1 で STAFF_TOKEN を消費するため、フルスイート時は 2 つ目のトークンを渡す */
-const flow2StaffToken = process.env.E2E_STAFF_TOKEN_FLOW2 ?? STAFF_TOKEN;
+import { STAFF_TOKEN_FLOW2, CUSTOMER_NAME } from '../fixtures/test-data';
 
 test.describe.serial('Flow 2: staff session', () => {
   let page: Page | undefined;
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
-    await page.goto(`/s/login/#token=${flow2StaffToken}`);
+    await page.goto(`/s/login/#token=${STAFF_TOKEN_FLOW2}`);
     await page.waitForURL('**/s/customers/**');
   });
 
@@ -57,6 +54,10 @@ test.describe.serial('Flow 2: staff session', () => {
       timeout: 3000,
     });
     await expect(zone.getByRole('button', { name: /タップして/ })).toHaveCount(0);
+    // age は消化済み、area / shisha_experience は未消化（未消化タスクが 2 件）
+    await expect(page.locator('#zone-age .bg-accent-light')).toBeVisible();
+    await expect(page.locator('#zone-area .bg-accent-light')).toHaveCount(0);
+    await expect(page.locator('#zone-shisha_experience .bg-accent-light')).toHaveCount(0);
   });
 
   test('test_visit_create_with_toast', async () => {

@@ -33,6 +33,8 @@ test.describe.serial('Flow 1: staff QR login', () => {
     if (!page) throw new Error('page not initialized');
     await page.goBack();
     await expect(page.getByText('この QR コードは既に使用されています')).toHaveCount(0);
+    const url = page.url();
+    expect(url.includes('/s/login/') || url.includes('/s/customers/')).toBeTruthy();
   });
 
   test('test_session_persists', async () => {
