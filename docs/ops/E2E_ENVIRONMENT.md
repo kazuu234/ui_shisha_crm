@@ -109,8 +109,13 @@ staff, _ = Staff.objects.get_or_create(
     defaults={'staff_type': 'staff', 'is_active': True},
 )
 
-# QR Token（ログインテスト用）
-staff_token = QRToken.objects.create(
+# QR Token（ログインテスト用 — Flow 1 用と Flow 2 用の 2 つ）
+staff_token_1 = QRToken.objects.create(
+    staff=staff,
+    token=QRToken.generate_token(),
+    expires_at=timezone.now() + timedelta(hours=24),
+)
+staff_token_2 = QRToken.objects.create(
     staff=staff,
     token=QRToken.generate_token(),
     expires_at=timezone.now() + timedelta(hours=24),
@@ -121,9 +126,10 @@ owner_token = QRToken.objects.create(
     expires_at=timezone.now() + timedelta(hours=24),
 )
 
-print(f'Staff token: {staff_token.token}')
+print(f'Staff token (Flow 1): {staff_token_1.token}')
+print(f'Staff token (Flow 2): {staff_token_2.token}')
 print(f'Owner token: {owner_token.token}')
-print('Save these tokens for Playwright tests.')
+print('Save these tokens in e2e/fixtures/test-data.ts (STAFF_TOKEN, STAFF_TOKEN_FLOW2, OWNER_TOKEN).')
 
 # Customer（E2E フロー 2 用）
 customer, _ = Customer.objects.get_or_create(
