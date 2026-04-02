@@ -1,10 +1,12 @@
 {
   "private": true,
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "tailwindcss": "^3.4"
   },
   "scripts": {
     "css:watch": "npx tailwindcss -i ./ui/static/ui/css/input.css -o ./ui/static/ui/css/output.css --watch",
-    "css:build": "npx tailwindcss -i ./ui/static/ui/css/input.css -o ./ui/static/ui/css/output.css --minify"
+    "css:build": "npx tailwindcss -i ./ui/static/ui/css/input.css -o ./ui/static/ui/css/output.css --minify",
+    "e2e:list": "playwright test --list --pass-with-no-tests"
   }
 }
