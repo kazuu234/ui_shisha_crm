@@ -5,6 +5,8 @@ import { STAFF_TOKEN_FLOW2, CUSTOMER_NAME } from '../fixtures/test-data';
 
 test.describe.serial('Flow 2: staff session', () => {
   let page: Page | undefined;
+  /** `test_visit_create_with_toast` 実行直前の `#recent-visits` 内の来店行数（border-b 行） */
+  let recentVisitRowCountBeforeCreate = 0;
 
   test.beforeAll(async ({ browser }) => {
     page = await browser.newPage();
@@ -62,7 +64,17 @@ test.describe.serial('Flow 2: staff session', () => {
 
   test('test_visit_create_with_toast', async () => {
     if (!page) throw new Error('page not initialized');
-    await page.getByRole('button', { name: '来店記録を作成する' }).click();
+    const recent = page.locator('#recent-visits');
+    recentVisitRowCountBeforeCreate = await recent.locator('> div.border-b').count();
+    await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.url().includes('/session/recent-visits/') &&
+          r.request().method() === 'GET' &&
+          r.request().headers()['hx-request'] === 'true',
+      ),
+      page.getByRole('button', { name: '来店記録を作成する' }).click(),
+    ]);
     const toast = page.getByText('来店記録を作成しました');
     await expect(toast).toBeVisible({ timeout: 3000 });
     await expect(toast).toBeHidden({ timeout: 6000 });
@@ -71,7 +83,12 @@ test.describe.serial('Flow 2: staff session', () => {
   test('test_recent_visits_updated', async () => {
     if (!page) throw new Error('page not initialized');
     const recent = page.locator('#recent-visits');
-    await expect(recent.getByText(/\d+\/\d+/)).toBeVisible({ timeout: 3000 });
+    const afterCount = await recent.locator('> div.border-b').count();
+    expect(afterCount).toBeGreaterThan(recentVisitRowCountBeforeCreate);
+
+    const today = new Date();
+    const todayStr = `${today.getMonth() + 1}/${today.getDate()}`;
+    await expect(recent.getByText(todayStr)).toBeVisible({ timeout: 3000 });
     await expect(recent.getByText('E2E Staff')).toBeVisible({ timeout: 3000 });
   });
 });

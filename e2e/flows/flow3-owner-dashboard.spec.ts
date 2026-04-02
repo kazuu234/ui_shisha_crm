@@ -69,6 +69,7 @@ test.describe.serial('Flow 3: owner dashboard', () => {
       }),
       select.selectOption(next),
     ]);
+    await expect(page).toHaveURL(new RegExp(`period=${next}`));
     await expectThreeChartsRendered(page);
   });
 
