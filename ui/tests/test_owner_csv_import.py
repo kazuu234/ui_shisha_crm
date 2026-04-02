@@ -182,8 +182,8 @@ class OwnerCsvImportViewsTests(TestCase):
         self.assertTrue(response.context["form"].errors.get("file"))
 
     def test_csv_upload_post_oversized(self):
-        big = b"x" * (10 * 1024 * 1024 + 1)
-        f = SimpleUploadedFile("big.csv", big, content_type="text/csv")
+        f = SimpleUploadedFile("big.csv", b"name\na", content_type="text/csv")
+        f.size = 10 * 1024 * 1024 + 1  # 実際にはメモリを使わない
         response = self.client.post(reverse("owner:csv-upload"), {"file": f})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context["form"].errors.get("file"))

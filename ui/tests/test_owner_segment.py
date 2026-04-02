@@ -161,7 +161,7 @@ class OwnerSegmentViewsTests(TestCase):
         data = self._build_formset_data(bad)
         response = self.client.post(reverse("owner:segment-preview"), data)
         self.assertEqual(response.status_code, 422)
-        self.assertContains(response, "入力内容にエラー")
+        self.assertContains(response, "入力内容にエラー", status_code=422)
 
     def test_segment_preview_affected_count(self):
         """閾値を変えたとき、セグメントが変わる顧客数が一致する"""
@@ -207,7 +207,7 @@ class OwnerSegmentViewsTests(TestCase):
         data = self._build_formset_data(rows)
         response = self.client.post(reverse("owner:segment-apply"), data)
         self.assertEqual(response.status_code, 422)
-        self.assertContains(response, "連続")
+        self.assertContains(response, "連続", status_code=422)
 
     def test_segment_apply_toast(self):
         data = self._build_formset_data(_default_thresholds_list())
@@ -236,7 +236,7 @@ class OwnerSegmentViewsTests(TestCase):
         ):
             response = self.client.post(reverse("owner:segment-apply"), data)
         self.assertEqual(response.status_code, 422)
-        self.assertContains(response, "rollback test")
+        self.assertContains(response, "rollback test", status_code=422)
         n = SegmentThreshold.objects.get(store=self.store, segment_name="new")
         self.assertEqual(n.max_visits, 1)
 
