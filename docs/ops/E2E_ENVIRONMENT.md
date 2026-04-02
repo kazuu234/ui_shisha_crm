@@ -95,7 +95,12 @@ from tasks.services import HearingTaskService
 from django.utils import timezone
 from datetime import timedelta
 
+# E2E 環境は通常 seed_store により Store が 1 件のみである前提。複数 Store がある DB では
+# first() の選択順に依存するため、本番相当の複数店舗 DB では name/pk 明示が必要な場合がある。
 store = Store.objects.first()
+if store is None:
+    raise RuntimeError('Store が見つかりません。先に Store を作成してください。')
+print(f'Using store: {store.name} (pk={store.pk})')
 
 # Owner（E2E フロー 3 用）
 owner, created = Staff.objects.get_or_create(
@@ -288,3 +293,4 @@ MVP では手動実行。将来的に GitHub Actions に組み込む場合の考
 
 - [2026-04-02] 初版作成
 - [2026-04-02] Issue #30 R12: E2E Customer のヒアリングフィールドリセット + `HearingTask` 削除後 `HearingTaskService.generate_tasks`（headless `tasks.services`）。Flow 2 の検索結果クリックを `CUSTOMER_ID` 指定に合わせて手順書に追記。
+- [2026-04-02] Issue #30 R16: seed スクリプトの `Store.objects.first()` に fail-fast（Store 未作成時は `RuntimeError`）、使用店舗のログ出力、E2E が通常 1 Store 前提である旨のコメントを追加。
