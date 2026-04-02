@@ -63,8 +63,7 @@ test.describe.serial('Flow 3: owner dashboard', () => {
     const current = await select.inputValue();
     const next = current === '7' ? '30' : '7';
 
-    // 変更前の daily-data script 内容を保持
-    const beforeData = await page.locator('#daily-data').textContent();
+    const oldDailyData = await page.locator('#daily-data').elementHandle();
 
     const [response] = await Promise.all([
       page.waitForResponse((r) => {
@@ -74,14 +73,14 @@ test.describe.serial('Flow 3: owner dashboard', () => {
       select.selectOption(next),
     ]);
 
-    // レスポンスが成功
     expect(response.ok()).toBeTruthy();
-
-    // hx-push-url による URL 更新
     await expect(page).toHaveURL(new RegExp(`period=${next}`));
 
-    // DOM が差し替わった（daily-data の内容が変わった、または新しい canvas が描画された）
-    // Note: 同じデータでも DOM は差し替わるので、json_script 要素の存在で確認
+    if (oldDailyData) {
+      const isDetached = await oldDailyData.evaluate((el) => !el.isConnected);
+      expect(isDetached).toBeTruthy();
+    }
+
     await expect(page.locator('#daily-data')).toBeAttached();
 
     await expectThreeChartsRendered(page);
