@@ -113,10 +113,10 @@ if not created:
 staff, created = Staff.objects.get_or_create(
     store=store,
     display_name='E2E Staff',
-    defaults={'staff_type': 'staff', 'role': 'staff', 'is_active': True},
+    defaults={'staff_type': 'regular', 'role': 'staff', 'is_active': True},
 )
 if not created:
-    staff.staff_type = 'staff'
+    staff.staff_type = 'regular'
     staff.role = 'staff'
     staff.is_active = True
     staff.save(update_fields=['staff_type', 'role', 'is_active'])

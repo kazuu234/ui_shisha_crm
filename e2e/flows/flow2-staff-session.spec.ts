@@ -10,6 +10,7 @@ test.describe.serial('Flow 2: staff session', () => {
   let page: Page | undefined;
   let context: BrowserContext | undefined;
   let recentVisitsHtmlBeforeCreate = '';
+  let recentVisitsCountBefore = 0;
 
   test.beforeAll(async ({ browser }) => {
     context = await browser.newContext({ baseURL: BASE_URL, timezoneId: TZ });
@@ -73,6 +74,7 @@ test.describe.serial('Flow 2: staff session', () => {
     if (!page) throw new Error('page not initialized');
     const recent = page.locator('#recent-visits');
     recentVisitsHtmlBeforeCreate = await recent.innerHTML();
+    recentVisitsCountBefore = await recent.locator(':scope > div.border-b').count();
     await Promise.all([
       page.waitForResponse(
         (r) =>
@@ -90,8 +92,11 @@ test.describe.serial('Flow 2: staff session', () => {
   test('test_recent_visits_updated', async () => {
     if (!page) throw new Error('page not initialized');
     const recent = page.locator('#recent-visits');
+    const afterCount = await recent.locator(':scope > div.border-b').count();
     const afterHtml = await recent.innerHTML();
-    expect(afterHtml).not.toBe(recentVisitsHtmlBeforeCreate);
+    expect(
+      afterCount > recentVisitsCountBefore || afterHtml !== recentVisitsHtmlBeforeCreate,
+    ).toBe(true);
 
     const firstRow = recent.locator(':scope > div.border-b').first();
     await expect(firstRow).toBeVisible({ timeout: 3000 });
