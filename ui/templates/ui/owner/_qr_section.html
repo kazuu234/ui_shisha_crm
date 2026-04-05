@@ -19,6 +19,8 @@
     <p class="text-[15px] text-text-secondary">QR トークンがありません</p>
   {% endif %}
 
+  <div id="qr-email-status" class="min-h-[1px]"></div>
+
   <div class="flex flex-wrap items-center gap-3">
     <button
       type="button"
@@ -37,6 +39,29 @@
       >
         印刷
       </button>
+    {% endif %}
+    {% if staff.email.strip %}
+      <button
+        type="button"
+        hx-post="{% url 'owner:staff-qr-email' staff.pk %}"
+        hx-target="#qr-email-status"
+        hx-swap="innerHTML"
+        class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium border border-border-default text-text-primary bg-bg-surface hover:bg-bg-surface-alt"
+      >
+        QR をメール送信
+      </button>
+    {% else %}
+      <button
+        type="button"
+        disabled
+        aria-disabled="true"
+        class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium border border-border-default text-text-muted bg-bg-surface-alt cursor-not-allowed opacity-70"
+      >
+        QR をメール送信
+      </button>
+      <p class="text-sm text-text-secondary w-full sm:w-auto">
+        メールアドレスが未設定です。スタッフ編集から設定してください
+      </p>
     {% endif %}
   </div>
 </div>

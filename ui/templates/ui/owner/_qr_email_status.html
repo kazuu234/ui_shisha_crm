@@ -1,0 +1,9 @@
+{% if success %}
+  <div class="rounded-sm border border-success/20 bg-success-subtle text-success p-3 text-[15px]" role="alert">
+    <p>{{ message }}</p>
+  </div>
+{% else %}
+  <div class="rounded-sm border border-error/20 bg-error-subtle text-error p-3 text-[15px]" role="alert">
+    <p>{{ message }}</p>
+  </div>
+{% endif %}

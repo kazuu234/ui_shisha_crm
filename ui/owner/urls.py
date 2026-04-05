@@ -12,6 +12,7 @@ from ui.owner.views.staff_mgmt import (
     StaffDetailView,
     StaffEditView,
     StaffListView,
+    StaffQREmailView,
     StaffQRIssueView,
 )
 from ui.owner.views.dashboard import DashboardView
@@ -49,6 +50,11 @@ urlpatterns = [
         "staff/<uuid:pk>/qr-issue/",
         StaffQRIssueView.as_view(),
         name="staff-qr-issue",
+    ),
+    path(
+        "staff/<uuid:pk>/qr-email/",
+        StaffQREmailView.as_view(),
+        name="staff-qr-email",
     ),
     path(
         "staff/<uuid:pk>/deactivate/",
