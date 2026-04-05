@@ -265,7 +265,13 @@ class StaffQREmailView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View)
             )
 
         qr_token = (
-            QRToken.objects.filter(staff=staff).order_by("-created_at").first()
+            QRToken.objects.filter(
+                staff=staff,
+                is_used=False,
+                expires_at__gt=timezone.now(),
+            )
+            .order_by("-created_at")
+            .first()
         )
         if qr_token is None:
             expires_hours = QR_EXPIRY_HOURS[staff.staff_type]

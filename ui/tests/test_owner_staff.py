@@ -575,6 +575,10 @@ class OwnerStaffViewsTests(TestCase):
         self.assertEqual(mime, "text/html")
         self.assertIn("cid:qr-code", html)
         self.assertIn("http://testserver/s/login/#token=", html)
+        raw = sent.message()
+        image_parts = [p for p in raw.walk() if p.get_content_type() == "image/png"]
+        self.assertEqual(len(image_parts), 1)
+        self.assertEqual(image_parts[0]["Content-ID"], "<qr-code>")
 
     @override_settings(
         EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
@@ -638,6 +642,72 @@ class OwnerStaffViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(QRToken.objects.filter(staff=self.staff).exists())
         self.assertEqual(len(mail.outbox), 1)
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        DEFAULT_FROM_EMAIL="noreply@test.example",
+    )
+    @patch(
+        "ui.owner.views.staff_mgmt.generate_qr_data_uri",
+        return_value=_MIN_PNG_DATA_URI,
+    )
+    def test_qr_email_used_token_issues_new(self, _mock_qr):
+        self.staff.email = "usedtok@example.com"
+        self.staff.save(update_fields=["email"])
+        QRToken.objects.filter(staff=self.staff).delete()
+        QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() + timedelta(hours=1),
+            is_used=True,
+        )
+        before = QRToken.objects.filter(staff=self.staff).count()
+        self.client.force_login(self.owner)
+        mail.outbox.clear()
+        response = self.client.post(
+            reverse("owner:staff-qr-email", kwargs={"pk": self.staff.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(QRToken.objects.filter(staff=self.staff).count(), before + 1)
+        self.assertEqual(len(mail.outbox), 1)
+        latest = (
+            QRToken.objects.filter(staff=self.staff).order_by("-created_at").first()
+        )
+        self.assertFalse(latest.is_used)
+        self.assertIn(latest.token, mail.outbox[0].body)
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        DEFAULT_FROM_EMAIL="noreply@test.example",
+    )
+    @patch(
+        "ui.owner.views.staff_mgmt.generate_qr_data_uri",
+        return_value=_MIN_PNG_DATA_URI,
+    )
+    def test_qr_email_expired_token_issues_new(self, _mock_qr):
+        self.staff.email = "expiredtok@example.com"
+        self.staff.save(update_fields=["email"])
+        QRToken.objects.filter(staff=self.staff).delete()
+        QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() - timedelta(hours=1),
+            is_used=False,
+        )
+        before = QRToken.objects.filter(staff=self.staff).count()
+        self.client.force_login(self.owner)
+        mail.outbox.clear()
+        response = self.client.post(
+            reverse("owner:staff-qr-email", kwargs={"pk": self.staff.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(QRToken.objects.filter(staff=self.staff).count(), before + 1)
+        self.assertEqual(len(mail.outbox), 1)
+        latest = (
+            QRToken.objects.filter(staff=self.staff).order_by("-created_at").first()
+        )
+        self.assertGreater(latest.expires_at, timezone.now())
+        self.assertIn(latest.token, mail.outbox[0].body)
 
     @override_settings(
         EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
