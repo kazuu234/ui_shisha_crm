@@ -576,6 +576,7 @@ class OwnerStaffViewsTests(TestCase):
         self.assertIn("cid:qr-code", html)
         self.assertIn("http://testserver/s/login/#token=", html)
         raw = sent.message()
+        self.assertEqual(raw.get_content_subtype(), "related")
         image_parts = [p for p in raw.walk() if p.get_content_type() == "image/png"]
         self.assertEqual(len(image_parts), 1)
         self.assertEqual(image_parts[0]["Content-ID"], "<qr-code>")

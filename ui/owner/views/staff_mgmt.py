@@ -316,6 +316,7 @@ class StaffQREmailView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View)
             to=[staff.email.strip()],
         )
         msg.attach_alternative(html_body, "text/html")
+        msg.mixed_subtype = "related"
         image = MIMEImage(png_bytes)
         image.add_header("Content-ID", "<qr-code>")
         image.add_header("Content-Disposition", "inline", filename="qr-code.png")
