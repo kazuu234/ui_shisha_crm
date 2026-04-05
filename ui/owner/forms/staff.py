@@ -19,6 +19,17 @@ class StaffCreateForm(forms.Form):
         ),
         error_messages={"required": "表示名を入力してください"},
     )
+    email = forms.EmailField(
+        label="メールアドレス",
+        required=False,
+        max_length=254,
+        widget=forms.EmailInput(
+            attrs={
+                "placeholder": "example@example.com",
+                "class": _FIELD_CLASS,
+            }
+        ),
+    )
     role = forms.ChoiceField(
         label="ロール",
         choices=[("staff", "スタッフ"), ("owner", "オーナー")],
@@ -32,6 +43,39 @@ class StaffCreateForm(forms.Form):
             ("owner", "オーナー"),
         ],
         widget=forms.Select(attrs={"class": _FIELD_CLASS}),
+    )
+
+    def clean_display_name(self):
+        name = (self.cleaned_data.get("display_name") or "").strip()
+        if len(name) > 100:
+            raise forms.ValidationError(
+                "表示名は100文字以内で入力してください。",
+            )
+        return name
+
+
+class StaffEditForm(forms.Form):
+    display_name = forms.CharField(
+        label="表示名",
+        max_length=100,
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "name",
+                "class": _FIELD_CLASS,
+            }
+        ),
+        error_messages={"required": "表示名を入力してください"},
+    )
+    email = forms.EmailField(
+        label="メールアドレス",
+        required=False,
+        max_length=254,
+        widget=forms.EmailInput(
+            attrs={
+                "placeholder": "example@example.com",
+                "class": _FIELD_CLASS,
+            }
+        ),
     )
 
     def clean_display_name(self):

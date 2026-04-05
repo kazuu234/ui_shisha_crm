@@ -1,9 +1,9 @@
 {% extends "ui/base_owner.html" %}
 {% load static %}
 
-{% block title %}スタッフ作成{% endblock %}
+{% block title %}{{ staff.display_name }} - 編集{% endblock %}
 
-{% block page_title %}スタッフ作成{% endblock %}
+{% block page_title %}{{ staff.display_name }} - 編集{% endblock %}
 
 {% block content %}
 <div class="max-w-xl">
@@ -30,24 +30,15 @@
       {% endif %}
     </div>
 
-    <div>
-      <label for="{{ form.role.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-1">
-        {{ form.role.label }}
-      </label>
-      {{ form.role }}
-      {% if form.role.errors %}
-        <p class="mt-1 text-sm text-error">{{ form.role.errors.0 }}</p>
-      {% endif %}
-    </div>
-
-    <div>
-      <label for="{{ form.staff_type.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-1">
-        {{ form.staff_type.label }}
-      </label>
-      {{ form.staff_type }}
-      {% if form.staff_type.errors %}
-        <p class="mt-1 text-sm text-error">{{ form.staff_type.errors.0 }}</p>
-      {% endif %}
+    <div class="rounded-sm border border-border-default bg-bg-surface-alt/40 p-4 space-y-2 text-[15px]">
+      <div class="flex flex-wrap gap-x-4 gap-y-1">
+        <span class="text-text-secondary font-medium shrink-0 w-24">ロール</span>
+        <span class="text-text-primary">{{ staff.get_role_display }}</span>
+      </div>
+      <div class="flex flex-wrap gap-x-4 gap-y-1">
+        <span class="text-text-secondary font-medium shrink-0 w-24">種別</span>
+        <span class="text-text-primary">{{ staff.get_staff_type_display }}</span>
+      </div>
     </div>
 
     <div class="flex items-center gap-3 pt-2">
@@ -55,9 +46,9 @@
         type="submit"
         class="inline-flex items-center justify-center rounded-sm px-4 py-2 text-sm font-medium bg-accent text-text-inverse hover:bg-accent-hover"
       >
-        作成
+        保存
       </button>
-      <a href="{% url 'owner:staff-list' %}" class="text-sm font-medium text-accent hover:text-accent-hover">
+      <a href="{% url 'owner:staff-detail' staff.pk %}" class="text-sm font-medium text-accent hover:text-accent-hover">
         キャンセル
       </a>
     </div>

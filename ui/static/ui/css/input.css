@@ -5,3 +5,22 @@
 [x-cloak] {
   display: none !important;
 }
+
+@media print {
+  aside,
+  nav,
+  header,
+  footer,
+  button,
+  a {
+    display: none !important;
+  }
+
+  main > div > *:not(#qr-section) {
+    display: none !important;
+  }
+
+  #qr-section {
+    display: block !important;
+  }
+}

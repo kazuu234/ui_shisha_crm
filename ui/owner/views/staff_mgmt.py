@@ -2,17 +2,19 @@ from datetime import timedelta
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views import View
 from django.views.generic import ListView
 from rest_framework import status
 
 from accounts.models import QRToken, Staff
+from accounts.qr_image import generate_qr_data_uri
 from accounts.services import QRAuthService
 from core.exceptions import BusinessError
 
 from ui.mixins import OwnerRequiredMixin, StoreMixin
-from ui.owner.forms.staff import StaffCreateForm
+from ui.owner.forms.staff import StaffCreateForm, StaffEditForm
 
 QR_EXPIRY_HOURS = {
     "temporary": 8,
@@ -104,6 +106,7 @@ class StaffCreateView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
         staff = Staff.objects.create_user(
             store=self.store,
             display_name=form.cleaned_data["display_name"],
+            email=form.cleaned_data["email"],
             role=form.cleaned_data["role"],
             staff_type=form.cleaned_data["staff_type"],
         )
@@ -131,6 +134,7 @@ class StaffDetailView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
         qr_url = (
             StaffDetailView._build_qr_url(staff, latest_qr) if latest_qr else None
         )
+        qr_image = generate_qr_data_uri(qr_url) if qr_url else None
 
         return render(
             request,
@@ -139,6 +143,7 @@ class StaffDetailView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
                 "staff": staff,
                 "latest_qr_token": latest_qr,
                 "qr_url": qr_url,
+                "qr_image": qr_image,
                 "active_sidebar": "staff",
             },
         )
@@ -147,6 +152,48 @@ class StaffDetailView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
     def _build_qr_url(staff, qr_token):
         prefix = "/o/login/" if staff.role == "owner" else "/s/login/"
         return f"{prefix}#token={qr_token.token}"
+
+
+class StaffEditView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
+    template_name = "ui/owner/staff_edit.html"
+    login_url = "/o/login/"
+
+    def _get_staff(self):
+        return get_object_or_404(
+            Staff, pk=self.kwargs["pk"], store=self.store, is_active=True
+        )
+
+    def _render(self, request, form, staff):
+        return render(
+            request,
+            self.template_name,
+            {
+                "form": form,
+                "staff": staff,
+                "active_sidebar": "staff",
+            },
+        )
+
+    def get(self, request, pk):
+        staff = self._get_staff()
+        form = StaffEditForm(
+            initial={
+                "display_name": staff.display_name,
+                "email": staff.email or "",
+            }
+        )
+        return self._render(request, form, staff)
+
+    def post(self, request, pk):
+        staff = self._get_staff()
+        form = StaffEditForm(request.POST)
+        if not form.is_valid():
+            return self._render(request, form, staff)
+
+        staff.display_name = form.cleaned_data["display_name"]
+        staff.email = form.cleaned_data["email"] or ""
+        staff.save(update_fields=["display_name", "email"])
+        return redirect(reverse("owner:staff-detail", kwargs={"pk": staff.pk}))
 
 
 class StaffQRIssueView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
@@ -161,6 +208,7 @@ class StaffQRIssueView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View)
         expires_hours = QR_EXPIRY_HOURS[staff.staff_type]
         qr_token = _issue_qr_token(staff, expires_in_hours=expires_hours)
         qr_url = StaffDetailView._build_qr_url(staff, qr_token)
+        qr_image = generate_qr_data_uri(qr_url)
 
         return render(
             request,
@@ -168,6 +216,7 @@ class StaffQRIssueView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View)
             {
                 "latest_qr_token": qr_token,
                 "qr_url": qr_url,
+                "qr_image": qr_image,
                 "staff": staff,
             },
         )
@@ -190,6 +239,7 @@ class StaffDeactivateView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, Vi
                 if latest_qr
                 else None
             )
+            qr_image = generate_qr_data_uri(qr_url) if qr_url else None
             return render(
                 request,
                 "ui/owner/staff_detail.html",
@@ -197,6 +247,7 @@ class StaffDeactivateView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, Vi
                     "staff": staff,
                     "latest_qr_token": latest_qr,
                     "qr_url": qr_url,
+                    "qr_image": qr_image,
                     "error": error_msg,
                     "active_sidebar": "staff",
                 },

@@ -10,6 +10,7 @@ from ui.owner.views.staff_mgmt import (
     StaffCreateView,
     StaffDeactivateView,
     StaffDetailView,
+    StaffEditView,
     StaffListView,
     StaffQRIssueView,
 )
@@ -43,6 +44,7 @@ urlpatterns = [
     path("staff/", StaffListView.as_view(), name="staff-list"),
     path("staff/new/", StaffCreateView.as_view(), name="staff-create"),
     path("staff/<uuid:pk>/", StaffDetailView.as_view(), name="staff-detail"),
+    path("staff/<uuid:pk>/edit/", StaffEditView.as_view(), name="staff-edit"),
     path(
         "staff/<uuid:pk>/qr-issue/",
         StaffQRIssueView.as_view(),

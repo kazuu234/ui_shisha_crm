@@ -316,3 +316,167 @@ class OwnerStaffViewsTests(TestCase):
         )
         self.assertContains(response, '<a href="/s/login/#token=')
         self.assertContains(response, f"{tok.token}")
+
+    def test_staff_detail_has_qr_image(self):
+        QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse("owner:staff-detail", kwargs={"pk": self.staff.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        qr_image = response.context["qr_image"]
+        self.assertIsNotNone(qr_image)
+        self.assertTrue(qr_image.startswith("data:image/png;base64,"))
+
+    def test_staff_detail_no_qr_image_when_no_token(self):
+        QRToken.objects.filter(staff=self.staff).delete()
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse("owner:staff-detail", kwargs={"pk": self.staff.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context["qr_image"])
+
+    def test_qr_section_has_img_tag(self):
+        QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse("owner:staff-detail", kwargs={"pk": self.staff.pk})
+        )
+        self.assertContains(response, "<img")
+
+    def test_phase2_note_removed(self):
+        QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse("owner:staff-detail", kwargs={"pk": self.staff.pk})
+        )
+        self.assertNotContains(response, "Phase 2")
+
+    def test_staff_create_with_email(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("owner:staff-create"),
+            {
+                "display_name": "Email Staff",
+                "email": "staff@example.com",
+                "role": "staff",
+                "staff_type": "regular",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        created = Staff.objects.get(display_name="Email Staff")
+        self.assertEqual(created.email, "staff@example.com")
+
+    def test_staff_create_without_email(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("owner:staff-create"),
+            {
+                "display_name": "No Email Staff",
+                "role": "staff",
+                "staff_type": "regular",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        created = Staff.objects.get(display_name="No Email Staff")
+        self.assertEqual(created.email, "")
+
+    def test_staff_edit_get(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse("owner:staff-edit", kwargs={"pk": self.staff.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "ui/owner/staff_edit.html")
+        self.assertEqual(
+            response.context["form"].initial.get("display_name"),
+            self.staff.display_name,
+        )
+
+    def test_staff_edit_post(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("owner:staff-edit", kwargs={"pk": self.staff.pk}),
+            {
+                "display_name": "Updated Name",
+                "email": "updated@example.com",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.url,
+            reverse("owner:staff-detail", kwargs={"pk": self.staff.pk}),
+        )
+        self.staff.refresh_from_db()
+        self.assertEqual(self.staff.display_name, "Updated Name")
+        self.assertEqual(self.staff.email, "updated@example.com")
+
+    def test_staff_edit_invalid_email(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("owner:staff-edit", kwargs={"pk": self.staff.pk}),
+            {
+                "display_name": self.staff.display_name,
+                "email": "not-an-email",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("email", response.context["form"].errors)
+
+    def test_print_button_visible(self):
+        QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse("owner:staff-detail", kwargs={"pk": self.staff.pk})
+        )
+        self.assertContains(response, "window.print()")
+
+    def test_staff_detail_has_email(self):
+        self.staff.email = ""
+        self.staff.save(update_fields=["email"])
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse("owner:staff-detail", kwargs={"pk": self.staff.pk})
+        )
+        self.assertContains(response, "未設定")
+
+        self.staff.email = "shown@example.com"
+        self.staff.save(update_fields=["email"])
+        response2 = self.client.get(
+            reverse("owner:staff-detail", kwargs={"pk": self.staff.pk})
+        )
+        self.assertContains(response2, "shown@example.com")
+
+    def test_qr_reissue_has_image(self):
+        QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("owner:staff-qr-issue", kwargs={"pk": self.staff.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(response.context["qr_image"])
+        self.assertTrue(
+            response.context["qr_image"].startswith("data:image/png;base64,")
+        )
+        self.assertContains(response, "<img")
