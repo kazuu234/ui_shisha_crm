@@ -1,4 +1,6 @@
+import re
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
@@ -8,6 +10,15 @@ from accounts.models import QRToken, Staff
 from tenants.models import Store, StoreGroup
 
 from ui.owner.views.staff_mgmt import StaffDeactivateView
+
+_QR_DATA_URI_RE = re.compile(r"data:image/png;base64,([A-Za-z0-9+/=]+)")
+
+
+def _first_qr_base64_payload(content: bytes) -> str:
+    m = _QR_DATA_URI_RE.search(content.decode())
+    if not m:
+        raise AssertionError("response に QR の data URI がありません")
+    return m.group(1)
 
 
 class OwnerStaffViewsTests(TestCase):
@@ -471,12 +482,52 @@ class OwnerStaffViewsTests(TestCase):
             expires_at=timezone.now() + timedelta(hours=1),
         )
         self.client.force_login(self.owner)
+        detail_url = reverse("owner:staff-detail", kwargs={"pk": self.staff.pk})
+        before_resp = self.client.get(detail_url)
+        self.assertEqual(before_resp.status_code, 200)
+        before_b64 = _first_qr_base64_payload(before_resp.content)
+
         response = self.client.post(
             reverse("owner:staff-qr-issue", kwargs={"pk": self.staff.pk}),
         )
         self.assertEqual(response.status_code, 200)
+        after_b64 = _first_qr_base64_payload(response.content)
+        self.assertNotEqual(before_b64, after_b64)
+
         self.assertIsNotNone(response.context["qr_image"])
         self.assertTrue(
             response.context["qr_image"].startswith("data:image/png;base64,")
         )
         self.assertContains(response, "<img")
+
+    @patch(
+        "ui.owner.views.staff_mgmt.generate_qr_data_uri",
+        return_value="data:image/png;base64,xx",
+    )
+    def test_qr_image_generation_receives_absolute_url(self, mock_gen):
+        tok = QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        self.client.force_login(self.owner)
+        self.client.get(
+            reverse("owner:staff-detail", kwargs={"pk": self.staff.pk})
+        )
+        mock_gen.assert_called()
+        encoded_url = mock_gen.call_args[0][0]
+        self.assertTrue(
+            encoded_url.startswith("http://testserver"),
+            msg=f"expected testserver absolute URL, got {encoded_url!r}",
+        )
+        self.assertIn("/s/login/#token=", encoded_url)
+        self.assertIn(tok.token, encoded_url)
+
+        mock_gen.reset_mock()
+        self.client.post(
+            reverse("owner:staff-qr-issue", kwargs={"pk": self.staff.pk})
+        )
+        mock_gen.assert_called()
+        encoded_url2 = mock_gen.call_args[0][0]
+        self.assertTrue(encoded_url2.startswith("http://testserver"))
+        self.assertIn("/s/login/#token=", encoded_url2)

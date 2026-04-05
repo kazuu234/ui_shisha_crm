@@ -134,7 +134,11 @@ class StaffDetailView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
         qr_url = (
             StaffDetailView._build_qr_url(staff, latest_qr) if latest_qr else None
         )
-        qr_image = generate_qr_data_uri(qr_url) if qr_url else None
+        qr_image = (
+            generate_qr_data_uri(request.build_absolute_uri(qr_url))
+            if qr_url
+            else None
+        )
 
         return render(
             request,
@@ -208,7 +212,7 @@ class StaffQRIssueView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View)
         expires_hours = QR_EXPIRY_HOURS[staff.staff_type]
         qr_token = _issue_qr_token(staff, expires_in_hours=expires_hours)
         qr_url = StaffDetailView._build_qr_url(staff, qr_token)
-        qr_image = generate_qr_data_uri(qr_url)
+        qr_image = generate_qr_data_uri(request.build_absolute_uri(qr_url))
 
         return render(
             request,
@@ -239,7 +243,11 @@ class StaffDeactivateView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, Vi
                 if latest_qr
                 else None
             )
-            qr_image = generate_qr_data_uri(qr_url) if qr_url else None
+            qr_image = (
+                generate_qr_data_uri(request.build_absolute_uri(qr_url))
+                if qr_url
+                else None
+            )
             return render(
                 request,
                 "ui/owner/staff_detail.html",
