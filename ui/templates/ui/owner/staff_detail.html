@@ -1,6 +1,8 @@
 {% extends "ui/base_owner.html" %}
 {% load static %}
 
+{% block body_class %}print-qr-page{% endblock %}
+
 {% block title %}{{ staff.display_name }}{% endblock %}
 
 {% block page_title %}{{ staff.display_name }}{% endblock %}
@@ -14,10 +16,20 @@
   {% endif %}
 
   <div class="bg-bg-surface rounded-md border border-border-default p-5 shadow-sm">
-    <h2 class="text-[17px] font-bold text-text-primary mb-4">基本情報</h2>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <h2 class="text-[17px] font-bold text-text-primary">基本情報</h2>
+      <a
+        href="{% url 'owner:staff-edit' staff.pk %}"
+        class="inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-sm font-medium border border-border-default text-text-primary bg-bg-surface hover:bg-bg-surface-alt"
+      >
+        編集
+      </a>
+    </div>
     <dl class="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-x-4 gap-y-3 text-[15px]">
       <dt class="text-text-secondary font-medium">表示名</dt>
       <dd class="text-text-primary">{{ staff.display_name }}</dd>
+      <dt class="text-text-secondary font-medium">メールアドレス</dt>
+      <dd class="text-text-primary">{% if staff.email %}{{ staff.email }}{% else %}未設定{% endif %}</dd>
       <dt class="text-text-secondary font-medium">ロール</dt>
       <dd class="text-text-primary">{{ staff.get_role_display }}</dd>
       <dt class="text-text-secondary font-medium">種別</dt>

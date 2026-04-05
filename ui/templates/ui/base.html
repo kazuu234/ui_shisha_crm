@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="{% static 'ui/css/output.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-bg-base text-text-primary font-sans">
+<body class="bg-bg-base text-text-primary font-sans {% block body_class %}{% endblock %}">
   {% block body %}{% endblock %}
 
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>

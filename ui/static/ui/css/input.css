@@ -5,3 +5,22 @@
 [x-cloak] {
   display: none !important;
 }
+
+@media print {
+  .print-qr-page aside,
+  .print-qr-page nav,
+  .print-qr-page header,
+  .print-qr-page footer,
+  .print-qr-page button,
+  .print-qr-page a {
+    display: none !important;
+  }
+
+  .print-qr-page main > div > *:not(#qr-section) {
+    display: none !important;
+  }
+
+  .print-qr-page #qr-section {
+    display: block !important;
+  }
+}
