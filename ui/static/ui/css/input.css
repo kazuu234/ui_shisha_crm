@@ -16,6 +16,10 @@
     display: none !important;
   }
 
+  .print-qr-page #qr-email-status {
+    display: none !important;
+  }
+
   .print-qr-page main > div > *:not(#qr-section) {
     display: none !important;
   }
