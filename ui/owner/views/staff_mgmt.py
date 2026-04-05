@@ -1,8 +1,15 @@
+import base64
+import re
 from datetime import timedelta
+from email.mime.image import MIMEImage
 
+from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.mail import EmailMultiAlternatives
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.defaultfilters import date as date_filter
 from django.urls import reverse
+from django.utils.html import escape
 from django.utils import timezone
 from django.views import View
 from django.views.generic import ListView
@@ -21,6 +28,17 @@ QR_EXPIRY_HOURS = {
     "regular": 720,
     "owner": 720,
 }
+
+_QR_DATA_URI_RE = re.compile(
+    r"^data:image/png;base64,([A-Za-z0-9+/=]+)\s*$", re.DOTALL
+)
+
+
+def _png_bytes_from_qr_data_uri(data_uri: str) -> bytes:
+    m = _QR_DATA_URI_RE.match((data_uri or "").strip())
+    if not m:
+        raise ValueError("invalid QR data URI")
+    return base64.b64decode(m.group(1))
 
 
 def _issue_qr_token(staff, *, expires_in_hours):
@@ -222,6 +240,99 @@ class StaffQRIssueView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View)
                 "qr_url": qr_url,
                 "qr_image": qr_image,
                 "staff": staff,
+            },
+        )
+
+
+class StaffQREmailView(LoginRequiredMixin, OwnerRequiredMixin, StoreMixin, View):
+    """HTMX POST: QR をメール送信 → ステータスフラグメントを返す。"""
+
+    login_url = "/o/login/"
+
+    def post(self, request, pk):
+        staff = get_object_or_404(
+            Staff, pk=pk, store=self.store, is_active=True
+        )
+        if not (staff.email or "").strip():
+            return render(
+                request,
+                "ui/owner/_qr_email_status.html",
+                {
+                    "success": False,
+                    "message": "メールアドレスが未設定です",
+                },
+                status=400,
+            )
+
+        qr_token = (
+            QRToken.objects.filter(staff=staff).order_by("-created_at").first()
+        )
+        if qr_token is None:
+            expires_hours = QR_EXPIRY_HOURS[staff.staff_type]
+            qr_token = _issue_qr_token(staff, expires_in_hours=expires_hours)
+
+        qr_url = StaffDetailView._build_qr_url(staff, qr_token)
+        absolute_url = request.build_absolute_uri(qr_url)
+        expires_str = date_filter(qr_token.expires_at, "Y/m/d H:i")
+
+        try:
+            data_uri = generate_qr_data_uri(absolute_url)
+            png_bytes = _png_bytes_from_qr_data_uri(data_uri)
+        except Exception:
+            return render(
+                request,
+                "ui/owner/_qr_email_status.html",
+                {
+                    "success": False,
+                    "message": "メール送信に失敗しました",
+                },
+            )
+
+        text_body = (
+            "QR ログインコード\n\n"
+            "以下の URL からログインできます:\n"
+            f"{absolute_url}\n\n"
+            f"有効期限: {expires_str}\n"
+        )
+        safe_url = escape(absolute_url)
+        html_body = (
+            "<h2>QR ログインコード</h2>"
+            "<p>以下の QR コードをスキャンしてログインしてください:</p>"
+            '<img src="cid:qr-code" alt="QR コード" width="200" height="200">'
+            f'<p>URL: <a href="{safe_url}">{safe_url}</a></p>'
+            f"<p>有効期限: {escape(expires_str)}</p>"
+        )
+
+        msg = EmailMultiAlternatives(
+            subject="【シーシャ CRM】QR ログインコード",
+            body=text_body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[staff.email.strip()],
+        )
+        msg.attach_alternative(html_body, "text/html")
+        image = MIMEImage(png_bytes)
+        image.add_header("Content-ID", "<qr-code>")
+        image.add_header("Content-Disposition", "inline", filename="qr-code.png")
+        msg.attach(image)
+
+        try:
+            msg.send()
+        except Exception:
+            return render(
+                request,
+                "ui/owner/_qr_email_status.html",
+                {
+                    "success": False,
+                    "message": "メール送信に失敗しました",
+                },
+            )
+
+        return render(
+            request,
+            "ui/owner/_qr_email_status.html",
+            {
+                "success": True,
+                "message": "メールを送信しました",
             },
         )
 

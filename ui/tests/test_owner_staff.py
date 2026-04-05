@@ -2,7 +2,9 @@ import re
 from datetime import timedelta
 from unittest.mock import patch
 
-from django.test import RequestFactory, TestCase
+from django.core import mail
+from django.template.defaultfilters import date as date_filter
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -531,3 +533,169 @@ class OwnerStaffViewsTests(TestCase):
         encoded_url2 = mock_gen.call_args[0][0]
         self.assertTrue(encoded_url2.startswith("http://testserver"))
         self.assertIn("/s/login/#token=", encoded_url2)
+
+    _MIN_PNG_DATA_URI = (
+        "data:image/png;base64,"
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    )
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        DEFAULT_FROM_EMAIL="noreply@test.example",
+    )
+    @patch(
+        "ui.owner.views.staff_mgmt.generate_qr_data_uri",
+        return_value=_MIN_PNG_DATA_URI,
+    )
+    def test_qr_email_send_success(self, _mock_qr):
+        self.staff.email = "recipient@example.com"
+        self.staff.save(update_fields=["email"])
+        tok = QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        self.client.force_login(self.owner)
+        mail.outbox.clear()
+        response = self.client.post(
+            reverse("owner:staff-qr-email", kwargs={"pk": self.staff.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.subject, "【シーシャ CRM】QR ログインコード")
+        self.assertEqual(sent.to, ["recipient@example.com"])
+        self.assertEqual(sent.from_email, "noreply@test.example")
+        self.assertIn("QR ログインコード", sent.body)
+        self.assertIn("以下の URL からログインできます:", sent.body)
+        expires_line = date_filter(tok.expires_at, "Y/m/d H:i")
+        self.assertIn(expires_line, sent.body)
+        self.assertTrue(sent.alternatives)
+        html, mime = sent.alternatives[0]
+        self.assertEqual(mime, "text/html")
+        self.assertIn("cid:qr-code", html)
+        self.assertIn("http://testserver/s/login/#token=", html)
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        DEFAULT_FROM_EMAIL="noreply@test.example",
+    )
+    @patch(
+        "ui.owner.views.staff_mgmt.generate_qr_data_uri",
+        return_value=_MIN_PNG_DATA_URI,
+    )
+    def test_qr_email_contains_qr_url(self, _mock_qr):
+        self.staff.email = "u@example.com"
+        self.staff.save(update_fields=["email"])
+        QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        self.client.force_login(self.owner)
+        mail.outbox.clear()
+        self.client.post(
+            reverse("owner:staff-qr-email", kwargs={"pk": self.staff.pk}),
+        )
+        sent = mail.outbox[0]
+        self.assertIn("http://testserver/s/login/#token=", sent.body)
+        html, _mime = sent.alternatives[0]
+        self.assertIn("http://testserver/s/login/#token=", html)
+
+    def test_qr_email_no_email(self):
+        self.staff.email = ""
+        self.staff.save(update_fields=["email"])
+        QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("owner:staff-qr-email", kwargs={"pk": self.staff.pk}),
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertContains(response, "メールアドレスが未設定です", status_code=400)
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        DEFAULT_FROM_EMAIL="noreply@test.example",
+    )
+    @patch(
+        "ui.owner.views.staff_mgmt.generate_qr_data_uri",
+        return_value=_MIN_PNG_DATA_URI,
+    )
+    def test_qr_email_no_token_issues_new(self, _mock_qr):
+        self.staff.email = "newtok@example.com"
+        self.staff.save(update_fields=["email"])
+        QRToken.objects.filter(staff=self.staff).delete()
+        self.assertFalse(QRToken.objects.filter(staff=self.staff).exists())
+        self.client.force_login(self.owner)
+        mail.outbox.clear()
+        response = self.client.post(
+            reverse("owner:staff-qr-email", kwargs={"pk": self.staff.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(QRToken.objects.filter(staff=self.staff).exists())
+        self.assertEqual(len(mail.outbox), 1)
+
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        DEFAULT_FROM_EMAIL="noreply@test.example",
+    )
+    @patch(
+        "ui.owner.views.staff_mgmt.generate_qr_data_uri",
+        return_value=_MIN_PNG_DATA_URI,
+    )
+    def test_qr_email_success_message(self, _mock_qr):
+        self.staff.email = "ok@example.com"
+        self.staff.save(update_fields=["email"])
+        QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("owner:staff-qr-email", kwargs={"pk": self.staff.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "ui/owner/_qr_email_status.html")
+        self.assertContains(response, "メールを送信しました")
+
+    def test_qr_email_button_disabled_no_email(self):
+        self.staff.email = ""
+        self.staff.save(update_fields=["email"])
+        QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse("owner:staff-detail", kwargs={"pk": self.staff.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(
+            response,
+            reverse("owner:staff-qr-email", kwargs={"pk": self.staff.pk}),
+        )
+        self.assertContains(response, "メールアドレスが未設定です。スタッフ編集から設定してください")
+
+    def test_qr_email_button_enabled_with_email(self):
+        self.staff.email = "btn@example.com"
+        self.staff.save(update_fields=["email"])
+        QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse("owner:staff-detail", kwargs={"pk": self.staff.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            reverse("owner:staff-qr-email", kwargs={"pk": self.staff.pk}),
+        )
