@@ -753,6 +753,25 @@ class OwnerStaffViewsTests(TestCase):
         )
         self.assertContains(response, "メールアドレスが未設定です。スタッフ編集から設定してください")
 
+    def test_qr_email_button_disabled_whitespace_email(self):
+        self.staff.email = "   "
+        self.staff.save(update_fields=["email"])
+        QRToken.objects.create(
+            staff=self.staff,
+            token=QRToken.generate_token(),
+            expires_at=timezone.now() + timedelta(hours=1),
+        )
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse("owner:staff-detail", kwargs={"pk": self.staff.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(
+            response,
+            reverse("owner:staff-qr-email", kwargs={"pk": self.staff.pk}),
+        )
+        self.assertContains(response, "メールアドレスが未設定です。スタッフ編集から設定してください")
+
     def test_qr_email_button_enabled_with_email(self):
         self.staff.email = "btn@example.com"
         self.staff.save(update_fields=["email"])

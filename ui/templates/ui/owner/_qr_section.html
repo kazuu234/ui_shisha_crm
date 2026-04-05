@@ -40,7 +40,7 @@
         印刷
       </button>
     {% endif %}
-    {% if staff.email %}
+    {% if staff.email.strip %}
       <button
         type="button"
         hx-post="{% url 'owner:staff-qr-email' staff.pk %}"

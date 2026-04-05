@@ -29,7 +29,7 @@
       <dt class="text-text-secondary font-medium">表示名</dt>
       <dd class="text-text-primary">{{ staff.display_name }}</dd>
       <dt class="text-text-secondary font-medium">メールアドレス</dt>
-      <dd class="text-text-primary">{% if staff.email %}{{ staff.email }}{% else %}未設定{% endif %}</dd>
+      <dd class="text-text-primary">{% if staff.email.strip %}{{ staff.email }}{% else %}未設定{% endif %}</dd>
       <dt class="text-text-secondary font-medium">ロール</dt>
       <dd class="text-text-primary">{{ staff.get_role_display }}</dd>
       <dt class="text-text-secondary font-medium">種別</dt>
