@@ -2,14 +2,16 @@
   {% include "ui/icons/check-circle.svg" %}
   <p class="text-[17px] font-semibold">ヒアリング完了</p>
 </div>
-<dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-[15px]">
+<div class="grid grid-cols-3 gap-3">
   {% for item in hearing_summary %}
-    <dt class="text-text-secondary">{{ item.label }}</dt>
-    <dd class="text-text-primary">
-      {% if item.value %}{{ item.value }}{% else %}<span class="text-text-muted">未入力</span>{% endif %}
-    </dd>
+    <div class="text-center">
+      <p class="text-xs text-text-secondary">{{ item.label }}</p>
+      <p class="text-sm font-medium text-text-primary">
+        {% if item.value %}{{ item.value }}{% else %}<span class="text-text-muted">未入力</span>{% endif %}
+      </p>
+    </div>
   {% endfor %}
-</dl>
+</div>
 <div class="mt-4">
   <a href="/s/customers/{{ customer.pk }}/edit/"
      class="text-sm font-medium text-accent hover:text-accent-hover hover:underline">
