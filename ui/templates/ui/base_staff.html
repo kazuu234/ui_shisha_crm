@@ -18,11 +18,11 @@
     </div>
   </header>
 
-  <main class="flex-1 overflow-y-auto p-5">
+  <main class="flex-1 overflow-y-auto pt-5 px-5 pb-[76px]">
     {% block content %}{% endblock %}
   </main>
 
-  <nav class="h-[56px] shrink-0 flex items-center justify-around border-t border-border-default bg-bg-surface">
+  <nav class="fixed bottom-0 inset-x-0 z-50 h-[56px] shrink-0 flex items-center justify-around border-t border-border-default bg-bg-surface">
     <a
       href="/s/customers/"
       class="flex flex-col items-center gap-1 text-xs {% if active_tab == 'customers' %}text-accent font-medium{% else %}text-text-secondary{% endif %}"
