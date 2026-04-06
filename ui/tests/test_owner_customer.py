@@ -341,6 +341,29 @@ class OwnerCustomerViewsTests(TestCase):
         self.client.get(reverse("owner:customer-detail", args=[c.pk]))
         self.assertNotIn("toast", self.client.session)
 
+    def test_owner_customer_detail_shows_initial_visit_count(self):
+        c = Customer.objects.create(
+            store=self.store,
+            name="過去分表示",
+            visit_count=5,
+            initial_visit_count=3,
+        )
+        response = self.client.get(reverse("owner:customer-detail", args=[c.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "うち過去分")
+        self.assertContains(response, "3回")
+
+    def test_owner_customer_detail_hides_initial_visit_count_zero(self):
+        c = Customer.objects.create(
+            store=self.store,
+            name="過去分なし",
+            visit_count=2,
+            initial_visit_count=0,
+        )
+        response = self.client.get(reverse("owner:customer-detail", args=[c.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "うち過去分")
+
     # --- Edit #25–35 ---
 
     def test_customer_edit_get(self):

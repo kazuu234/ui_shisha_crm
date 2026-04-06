@@ -176,7 +176,12 @@ class CustomerCreateView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin, Vie
             )
 
         name = form.cleaned_data["name"]
-        customer = Customer.objects.create(store=self.store, name=name)
+        initial_visit_count = form.cleaned_data.get("initial_visit_count") or 0
+        customer = Customer.objects.create(
+            store=self.store,
+            name=name,
+            initial_visit_count=initial_visit_count,
+        )
         HearingTaskService.generate_tasks(customer)
 
         response = HttpResponse(status=204)

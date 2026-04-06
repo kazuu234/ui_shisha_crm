@@ -25,6 +25,22 @@ class CustomerCreateForm(forms.Form):
         ),
         error_messages={"required": "名前を入力してください"},
     )
+    initial_visit_count = forms.IntegerField(
+        label="過去の来店回数",
+        required=False,
+        min_value=0,
+        initial=0,
+        widget=forms.NumberInput(
+            attrs={
+                "placeholder": "0",
+                "class": (
+                    "w-full border border-border-default rounded-sm p-3 "
+                    "text-[17px] bg-bg-surface text-text-primary"
+                ),
+            }
+        ),
+        help_text="常連の方を登録する場合、CRM導入以前の来店回数を入力してください",
+    )
 
 
 EDIT_FIELD_CHOICES = {

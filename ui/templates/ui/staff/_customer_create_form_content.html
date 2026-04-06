@@ -19,6 +19,16 @@
       <p class="text-error text-sm mt-2">{{ form.name.errors.0 }}</p>
     {% endif %}
   </div>
+  <div>
+    <label for="{{ form.initial_visit_count.id_for_label }}" class="block text-sm font-medium text-text-secondary mb-2">{{ form.initial_visit_count.label }}</label>
+    {{ form.initial_visit_count }}
+    {% if form.initial_visit_count.help_text %}
+      <p class="text-text-muted text-xs mt-1">{{ form.initial_visit_count.help_text }}</p>
+    {% endif %}
+    {% if form.initial_visit_count.errors %}
+      <p class="text-error text-sm mt-2">{{ form.initial_visit_count.errors.0 }}</p>
+    {% endif %}
+  </div>
   <button
     type="submit"
     class="w-full py-3 rounded-md bg-accent text-text-inverse font-medium text-[17px] hover:bg-accent-hover active:bg-accent-active transition-colors"

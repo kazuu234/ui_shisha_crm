@@ -52,7 +52,12 @@
       </dd>
 
       <dt class="text-text-secondary">来店回数</dt>
-      <dd class="text-text-primary">{{ customer.visit_count }}回</dd>
+      <dd class="text-text-primary">
+        {{ customer.visit_count }}回
+        {% if customer.initial_visit_count > 0 %}
+          <span class="text-text-muted text-sm">（うち過去分: {{ customer.initial_visit_count }}回）</span>
+        {% endif %}
+      </dd>
 
       <dt class="text-text-secondary">年齢</dt>
       <dd class="text-text-primary">
