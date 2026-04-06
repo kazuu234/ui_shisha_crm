@@ -50,7 +50,7 @@
               <button
                 type="button"
                 hx-patch="/s/customers/{{ customer.id }}/field/"
-                hx-vals='{"field": "{{ task.field_name }}", "value": "{{ area_value }}"}'
+                hx-vals='{"field": "{{ task.field_name }}", "value": "{{ area_value|escapejs }}"}'
                 hx-target="#zone-{{ task.field_name }}"
                 hx-swap="outerHTML"
                 class="inline-flex items-center rounded-full border border-border-default bg-bg-surface px-3 py-1.5 text-sm text-text-primary hover:border-accent active:bg-accent-light"

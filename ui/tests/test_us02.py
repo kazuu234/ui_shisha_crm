@@ -130,3 +130,20 @@ class US02RecentAreasTests(TestCase):
         )
         self.assertEqual(response.status_code, 422)
         self.assertContains(response, "履歴エリア表示用", status_code=422)
+
+    def test_session_recent_areas_special_chars_escaped(self):
+        """area に特殊文字が含まれても hx-vals が壊れないこと"""
+        Customer.objects.create(store=self.store, name="特殊", area='渋谷"周辺')
+        c = Customer.objects.create(store=self.store, name="対象特殊", area=None)
+        HearingTask.objects.create(
+            store=self.store,
+            customer=c,
+            field_name="area",
+            status=HearingTask.STATUS_OPEN,
+        )
+        response = self.client.get(self._session_url(c))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        # escapejs により " が \u0022 にエスケープされること
+        self.assertIn("\\u0022", content)
+        self.assertNotIn('value": "渋谷"周辺"', content)

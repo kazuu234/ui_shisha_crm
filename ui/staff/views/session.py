@@ -163,7 +163,13 @@ class CustomerFieldUpdateView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin
                 "filled": False,
             }
             if field_name == "area":
-                ctx["recent_areas"] = _get_recent_areas(self.store)
+                area_task_open = HearingTask.objects.for_store(self.store).filter(
+                    customer=customer,
+                    field_name="area",
+                    status=HearingTask.STATUS_OPEN,
+                ).exists()
+                if area_task_open:
+                    ctx["recent_areas"] = _get_recent_areas(self.store)
             response = render(
                 request,
                 "ui/staff/_zone_task.html",
