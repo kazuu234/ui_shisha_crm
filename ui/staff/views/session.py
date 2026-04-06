@@ -207,17 +207,22 @@ class CustomerFieldUpdateView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin
         actual_value = getattr(customer, field_name)
         is_filled = actual_value is not None and actual_value != ""
 
-        response = render(
-            request,
-            "ui/staff/_zone_task.html",
-            {
-                "task": task,
-                "config": config,
-                "customer": customer,
-                "filled": is_filled,
-                "filled_label": self._filled_label(field_name, actual_value) if is_filled else "",
-            },
-        )
+        ctx = {
+            "task": task,
+            "config": config,
+            "customer": customer,
+            "filled": is_filled,
+            "filled_label": self._filled_label(field_name, actual_value) if is_filled else "",
+        }
+        if field_name == "area" and not is_filled:
+            area_task_open = HearingTask.objects.for_store(self.store).filter(
+                customer=customer,
+                field_name="area",
+                status=HearingTask.STATUS_OPEN,
+            ).exists()
+            if area_task_open:
+                ctx["recent_areas"] = _get_recent_areas(self.store)
+        response = render(request, "ui/staff/_zone_task.html", ctx)
         if not remaining.exists():
             response["HX-Trigger"] = "all-tasks-done"
         return response

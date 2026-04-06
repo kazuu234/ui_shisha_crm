@@ -131,6 +131,27 @@ class US02RecentAreasTests(TestCase):
         self.assertEqual(response.status_code, 422)
         self.assertContains(response, "履歴エリア表示用", status_code=422)
 
+    def test_field_update_empty_area_keeps_recent_areas(self):
+        """area を空文字で PATCH 成功した場合も recent_areas が返ること"""
+        Customer.objects.create(store=self.store, name="履歴あり", area="渋谷周辺")
+        c = Customer.objects.create(store=self.store, name="空入力対象", area=None)
+        HearingTask.objects.create(
+            store=self.store,
+            customer=c,
+            field_name="area",
+            status=HearingTask.STATUS_OPEN,
+        )
+        url = f"/s/customers/{c.pk}/field/"
+        body = urlencode({"field": "area", "value": ""})
+        response = self.client.generic(
+            "PATCH",
+            url,
+            data=body,
+            content_type="application/x-www-form-urlencoded",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "渋谷周辺")
+
     def test_session_recent_areas_special_chars_escaped(self):
         """area に特殊文字が含まれても hx-vals が壊れないこと"""
         Customer.objects.create(store=self.store, name="特殊", area='渋谷"周辺')
