@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Max
 from django.http import HttpResponse, QueryDict
 from django.shortcuts import get_object_or_404, render
 from django.views import View
@@ -50,6 +51,19 @@ SEGMENT_DISPLAY = {
 }
 
 
+def _get_recent_areas(store, limit=10):
+    """Store 内の Customer から最近入力された area のユニーク値を取得する。"""
+    rows = (
+        Customer.objects.for_store(store)
+        .filter(area__isnull=False)
+        .exclude(area="")
+        .values("area")
+        .annotate(last_updated=Max("updated_at"))
+        .order_by("-last_updated")[:limit]
+    )
+    return [row["area"] for row in rows]
+
+
 def _build_hearing_summary(customer):
     hearing_summary = []
     for field_name, config in TASK_FIELD_CONFIG.items():
@@ -94,6 +108,12 @@ class SessionView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin, TemplateVi
         for task in open_tasks:
             task.config = TASK_FIELD_CONFIG.get(task.field_name, {})
 
+        area_task_open = any(t.field_name == "area" for t in open_tasks)
+        if area_task_open:
+            context["recent_areas"] = _get_recent_areas(self.store)
+        else:
+            context["recent_areas"] = []
+
         recent_visits = list(
             Visit.objects.for_store(self.store)
             .filter(customer=customer)
@@ -135,16 +155,25 @@ class CustomerFieldUpdateView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin
             if task is None:
                 task = SimpleNamespace(field_name=field_name or "unknown")
             err_txt = form.errors.as_text()
+            ctx = {
+                "task": task,
+                "config": TASK_FIELD_CONFIG.get(field_name, {}),
+                "customer": customer,
+                "error": err_txt,
+                "filled": False,
+            }
+            if field_name == "area":
+                area_task_open = HearingTask.objects.for_store(self.store).filter(
+                    customer=customer,
+                    field_name="area",
+                    status=HearingTask.STATUS_OPEN,
+                ).exists()
+                if area_task_open:
+                    ctx["recent_areas"] = _get_recent_areas(self.store)
             response = render(
                 request,
                 "ui/staff/_zone_task.html",
-                {
-                    "task": task,
-                    "config": TASK_FIELD_CONFIG.get(field_name, {}),
-                    "customer": customer,
-                    "error": err_txt,
-                    "filled": False,
-                },
+                ctx,
             )
             response.status_code = 422
             return response
@@ -178,17 +207,22 @@ class CustomerFieldUpdateView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin
         actual_value = getattr(customer, field_name)
         is_filled = actual_value is not None and actual_value != ""
 
-        response = render(
-            request,
-            "ui/staff/_zone_task.html",
-            {
-                "task": task,
-                "config": config,
-                "customer": customer,
-                "filled": is_filled,
-                "filled_label": self._filled_label(field_name, actual_value) if is_filled else "",
-            },
-        )
+        ctx = {
+            "task": task,
+            "config": config,
+            "customer": customer,
+            "filled": is_filled,
+            "filled_label": self._filled_label(field_name, actual_value) if is_filled else "",
+        }
+        if field_name == "area" and not is_filled:
+            area_task_open = HearingTask.objects.for_store(self.store).filter(
+                customer=customer,
+                field_name="area",
+                status=HearingTask.STATUS_OPEN,
+            ).exists()
+            if area_task_open:
+                ctx["recent_areas"] = _get_recent_areas(self.store)
+        response = render(request, "ui/staff/_zone_task.html", ctx)
         if not remaining.exists():
             response["HX-Trigger"] = "all-tasks-done"
         return response
