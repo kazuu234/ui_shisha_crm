@@ -1,3 +1,4 @@
+import re
 from datetime import date, timedelta
 from unittest.mock import call, patch
 
@@ -472,3 +473,34 @@ class OwnerDashboardViewTests(TestCase):
         self.assertEqual(html.count('id="chart-daily"'), 1)
         self.assertEqual(html.count('id="chart-segment"'), 1)
         self.assertEqual(html.count('id="chart-staff"'), 1)
+
+    @patch("ui.owner.views.dashboard.date")
+    @patch("ui.owner.views.dashboard.AnalyticsService")
+    def test_chart_containers_have_fixed_height(self, mock_analytics, mock_date):
+        """canvas の直接の親 div に relative h-[300px] があること（Issue #36 回帰防止）"""
+        mock_date.today.return_value = FIXED_TODAY
+        mock_analytics.daily_summary.return_value = {"period": {}, "daily": []}
+        mock_analytics.segment_ratio.return_value = _segment_payload(0)
+        mock_analytics.staff_summary.return_value = {"period": {}, "staff": []}
+
+        response = self.client.get(reverse("owner:dashboard"))
+        content = response.content.decode()
+        self.assertEqual(content.count('<div class="relative h-[300px]">'), 3)
+
+    @patch("ui.owner.views.dashboard.date")
+    @patch("ui.owner.views.dashboard.AnalyticsService")
+    def test_canvas_no_fixed_height_attribute(self, mock_analytics, mock_date):
+        """canvas に height 属性が残っていないこと（Issue #36 回帰防止）"""
+        mock_date.today.return_value = FIXED_TODAY
+        mock_analytics.daily_summary.return_value = {"period": {}, "daily": []}
+        mock_analytics.segment_ratio.return_value = _segment_payload(0)
+        mock_analytics.staff_summary.return_value = {"period": {}, "staff": []}
+
+        response = self.client.get(reverse("owner:dashboard"))
+        content = response.content.decode()
+        canvas_with_height = re.findall(r"<canvas[^>]*height=", content)
+        self.assertEqual(
+            len(canvas_with_height),
+            0,
+            f"canvas に height 属性が残っています: {canvas_with_height}",
+        )
