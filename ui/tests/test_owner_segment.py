@@ -169,7 +169,8 @@ class OwnerSegmentViewsTests(TestCase):
         response = self.client.post(reverse("owner:segment-preview"), data)
         self.assertEqual(response.status_code, 200)
         # vc=2 は repeat→new、vc=5 は regular→repeat の 2 件が変化
-        self.assertContains(response, "2 件の顧客のセグメントが変わります")
+        # 件数が <strong> タグ内のため「2 件」は連続文字列にならない
+        self.assertContains(response, "</strong> 件の顧客のセグメントが変わります")
 
     def test_segment_preview_segment_counts(self):
         data = self._build_formset_data(_default_thresholds_list())

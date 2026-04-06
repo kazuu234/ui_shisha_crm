@@ -182,8 +182,12 @@ class OwnerCsvImportViewsTests(TestCase):
         self.assertTrue(response.context["form"].errors.get("file"))
 
     def test_csv_upload_post_oversized(self):
-        f = SimpleUploadedFile("big.csv", b"name\na", content_type="text/csv")
-        f.size = 10 * 1024 * 1024 + 1  # 実際にはメモリを使わない
+        # Client がアップロードを再構築するため、実バイト長で 10MB 超にする
+        f = SimpleUploadedFile(
+            "big.csv",
+            bytes(10 * 1024 * 1024 + 1),
+            content_type="text/csv",
+        )
         response = self.client.post(reverse("owner:csv-upload"), {"file": f})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context["form"].errors.get("file"))
