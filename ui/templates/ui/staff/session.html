@@ -28,26 +28,15 @@
     <div
       x-show="allDone"
       x-transition
+      id="hearing-summary"
+      hx-get="/s/customers/{{ customer.pk }}/session/hearing-summary/"
+      hx-trigger="all-tasks-done from:body"
+      hx-swap="innerHTML"
       class="bg-bg-surface rounded-md border border-border-default p-5"
     >
-      <div class="flex items-center gap-2 text-success mb-4">
-        {% include "ui/icons/check-circle.svg" %}
-        <p class="text-[17px] font-semibold">ヒアリング完了</p>
-      </div>
-      <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-[15px]">
-        {% for item in hearing_summary %}
-          <dt class="text-text-secondary">{{ item.label }}</dt>
-          <dd class="text-text-primary">
-            {% if item.value %}{{ item.value }}{% else %}<span class="text-text-muted">未入力</span>{% endif %}
-          </dd>
-        {% endfor %}
-      </dl>
-      <div class="mt-4">
-        <a href="/s/customers/{{ customer.pk }}/edit/"
-           class="text-sm font-medium text-accent hover:text-accent-hover hover:underline">
-          顧客情報を編集
-        </a>
-      </div>
+      {% if not tasks %}
+        {% include "ui/staff/_hearing_summary.html" %}
+      {% endif %}
     </div>
   </section>
 

@@ -761,3 +761,22 @@ class US03SessionHearingSummaryTests(TestCase):
         )
         response = self.client.get(self._session_url(c))
         self.assertNotContains(response, "ヒアリング完了")
+
+    def test_hearing_summary_fragment_returns_latest_data(self):
+        c = Customer.objects.create(
+            store=self.store,
+            name="FragLatest",
+            age=10,
+            area="旧エリア",
+            shisha_experience="beginner",
+        )
+        fragment_url = f"/s/customers/{c.pk}/session/hearing-summary/"
+        response_before = self.client.get(fragment_url)
+        self.assertEqual(response_before.status_code, 200)
+        self.assertContains(response_before, "10代")
+
+        Customer.objects.filter(pk=c.pk).update(age=20)
+        response_after = self.client.get(fragment_url)
+        self.assertEqual(response_after.status_code, 200)
+        self.assertContains(response_after, "20代")
+        self.assertNotContains(response_after, "10代")

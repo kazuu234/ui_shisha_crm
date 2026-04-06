@@ -50,6 +50,30 @@ SEGMENT_DISPLAY = {
 }
 
 
+def _build_hearing_summary(customer):
+    hearing_summary = []
+    for field_name, config in TASK_FIELD_CONFIG.items():
+        raw_value = getattr(customer, field_name, None)
+        if raw_value is not None and raw_value != "":
+            if config.get("type") == "selection":
+                display = raw_value
+                for choice_val, label in config.get("choices", []):
+                    if choice_val == raw_value:
+                        display = label
+                        break
+            else:
+                display = str(raw_value)
+        else:
+            display = None
+        hearing_summary.append(
+            {
+                "label": config["label"],
+                "value": display,
+            }
+        )
+    return hearing_summary
+
+
 class SessionView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin, TemplateView):
     template_name = "ui/staff/session.html"
     login_url = "/s/login/"
@@ -78,26 +102,7 @@ class SessionView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin, TemplateVi
         )
         last_visited_at = recent_visits[0].visited_at if recent_visits else None
 
-        hearing_summary = []
-        for field_name, config in TASK_FIELD_CONFIG.items():
-            raw_value = getattr(customer, field_name, None)
-            if raw_value is not None and raw_value != "":
-                if config.get("type") == "selection":
-                    display = raw_value
-                    for choice_val, label in config.get("choices", []):
-                        if choice_val == raw_value:
-                            display = label
-                            break
-                else:
-                    display = str(raw_value)
-            else:
-                display = None
-            hearing_summary.append(
-                {
-                    "label": config["label"],
-                    "value": display,
-                }
-            )
+        hearing_summary = _build_hearing_summary(customer)
 
         context["customer"] = customer
         context["last_visited_at"] = last_visited_at
@@ -232,4 +237,17 @@ class SessionRecentVisitsFragmentView(LoginRequiredMixin, StaffRequiredMixin, St
             request,
             "ui/staff/_recent_visits.html",
             {"recent_visits": recent_visits, "customer": customer},
+        )
+
+
+class SessionHearingSummaryFragmentView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin, View):
+    login_url = "/s/login/"
+
+    def get(self, request, pk):
+        customer = get_object_or_404(Customer.objects.for_store(self.store), pk=pk)
+        hearing_summary = _build_hearing_summary(customer)
+        return render(
+            request,
+            "ui/staff/_hearing_summary.html",
+            {"hearing_summary": hearing_summary, "customer": customer},
         )

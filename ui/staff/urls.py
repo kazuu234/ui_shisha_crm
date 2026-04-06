@@ -12,6 +12,7 @@ from ui.staff.views.customer import (
 from ui.staff.views.session import (
     CustomerFieldUpdateView,
     SessionHeaderFragmentView,
+    SessionHearingSummaryFragmentView,
     SessionRecentVisitsFragmentView,
     SessionView,
 )
@@ -49,6 +50,11 @@ urlpatterns = [
         "customers/<uuid:pk>/session/recent-visits/",
         SessionRecentVisitsFragmentView.as_view(),
         name="session-recent-visits",
+    ),
+    path(
+        "customers/<uuid:pk>/session/hearing-summary/",
+        SessionHearingSummaryFragmentView.as_view(),
+        name="session-hearing-summary",
     ),
     path(
         "customers/<uuid:pk>/field/",
