@@ -21,34 +21,40 @@
 
 <div class="grid grid-cols-2 gap-6">
 
-  <div class="col-span-2 bg-bg-surface rounded-md p-4 border border-border-default relative h-[300px]">
+  <div class="col-span-2 bg-bg-surface rounded-md p-4 border border-border-default">
     <h3 class="text-lg font-semibold text-text-primary mb-4">日別来客数推移</h3>
-    <canvas id="chart-daily"></canvas>
-    {% if not has_data %}
-      <div class="absolute inset-0 flex items-center justify-center bg-bg-surface/80 text-text-secondary">
-        <p>データがありません</p>
-      </div>
-    {% endif %}
+    <div class="relative h-[300px]">
+      <canvas id="chart-daily"></canvas>
+      {% if not has_data %}
+        <div class="absolute inset-0 flex items-center justify-center bg-bg-surface/80 text-text-secondary">
+          <p>データがありません</p>
+        </div>
+      {% endif %}
+    </div>
   </div>
 
-  <div class="bg-bg-surface rounded-md p-4 border border-border-default relative h-[300px]">
+  <div class="bg-bg-surface rounded-md p-4 border border-border-default">
     <h3 class="text-lg font-semibold text-text-primary mb-4">セグメント比率</h3>
-    <canvas id="chart-segment"></canvas>
-    {% if not has_data %}
-      <div class="absolute inset-0 flex items-center justify-center bg-bg-surface/80 text-text-secondary">
-        <p>データがありません</p>
-      </div>
-    {% endif %}
+    <div class="relative h-[300px]">
+      <canvas id="chart-segment"></canvas>
+      {% if not has_data %}
+        <div class="absolute inset-0 flex items-center justify-center bg-bg-surface/80 text-text-secondary">
+          <p>データがありません</p>
+        </div>
+      {% endif %}
+    </div>
   </div>
 
-  <div class="bg-bg-surface rounded-md p-4 border border-border-default relative h-[300px]">
+  <div class="bg-bg-surface rounded-md p-4 border border-border-default">
     <h3 class="text-lg font-semibold text-text-primary mb-4">スタッフ別対応数</h3>
-    <canvas id="chart-staff"></canvas>
-    {% if not has_data %}
-      <div class="absolute inset-0 flex items-center justify-center bg-bg-surface/80 text-text-secondary">
-        <p>データがありません</p>
-      </div>
-    {% endif %}
+    <div class="relative h-[300px]">
+      <canvas id="chart-staff"></canvas>
+      {% if not has_data %}
+        <div class="absolute inset-0 flex items-center justify-center bg-bg-surface/80 text-text-secondary">
+          <p>データがありません</p>
+        </div>
+      {% endif %}
+    </div>
   </div>
 
 </div>

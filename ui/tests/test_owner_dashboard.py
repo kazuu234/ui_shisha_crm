@@ -477,7 +477,7 @@ class OwnerDashboardViewTests(TestCase):
     @patch("ui.owner.views.dashboard.date")
     @patch("ui.owner.views.dashboard.AnalyticsService")
     def test_chart_containers_have_fixed_height(self, mock_analytics, mock_date):
-        """チャート親 div に h-[300px] が設定されていること（Issue #36 回帰防止）"""
+        """canvas の直接の親 div に relative h-[300px] があること（Issue #36 回帰防止）"""
         mock_date.today.return_value = FIXED_TODAY
         mock_analytics.daily_summary.return_value = {"period": {}, "daily": []}
         mock_analytics.segment_ratio.return_value = _segment_payload(0)
@@ -485,7 +485,7 @@ class OwnerDashboardViewTests(TestCase):
 
         response = self.client.get(reverse("owner:dashboard"))
         content = response.content.decode()
-        self.assertEqual(content.count("h-[300px]"), 3)
+        self.assertEqual(content.count('<div class="relative h-[300px]">'), 3)
 
     @patch("ui.owner.views.dashboard.date")
     @patch("ui.owner.views.dashboard.AnalyticsService")
