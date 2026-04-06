@@ -10,6 +10,7 @@ from django.views.generic import TemplateView
 from customers.models import Customer
 from tasks.services import HearingTaskService
 from visits.models import Visit
+from visits.services import SegmentService
 
 from ui.mixins import StaffRequiredMixin, StoreMixin
 from ui.staff.forms.customer import CustomerCreateForm, CustomerEditFieldForm
@@ -182,6 +183,8 @@ class CustomerCreateView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin, Vie
             name=name,
             initial_visit_count=initial_visit_count,
         )
+        if initial_visit_count > 0:
+            SegmentService.recalculate_segment(customer)
         HearingTaskService.generate_tasks(customer)
 
         response = HttpResponse(status=204)

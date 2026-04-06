@@ -187,6 +187,28 @@ class CustomerSelectAndSearchTests(TestCase):
         c = Customer.objects.get(name="過去回数なし")
         self.assertEqual(c.initial_visit_count, 0)
 
+    def test_create_customer_with_initial_visit_count_recalculates_visit_count(self):
+        """initial_visit_count を指定して作成すると visit_count が即座に反映される"""
+        resp = self.client.post(
+            "/s/customers/new/",
+            {"name": "テスト常連", "initial_visit_count": "5"},
+        )
+        self.assertEqual(resp.status_code, 204)
+        customer = Customer.objects.get(name="テスト常連")
+        self.assertEqual(customer.initial_visit_count, 5)
+        self.assertEqual(customer.visit_count, 5)
+
+    def test_create_customer_without_initial_visit_count_keeps_zero(self):
+        """initial_visit_count 未指定なら visit_count は 0 のまま"""
+        resp = self.client.post(
+            "/s/customers/new/",
+            {"name": "新規さん"},
+        )
+        self.assertEqual(resp.status_code, 204)
+        customer = Customer.objects.get(name="新規さん")
+        self.assertEqual(customer.initial_visit_count, 0)
+        self.assertEqual(customer.visit_count, 0)
+
     def test_customer_create_negative_initial_visit_count(self):
         response = self.client.post(
             "/s/customers/new/",
