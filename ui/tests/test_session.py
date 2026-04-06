@@ -74,7 +74,7 @@ class SessionFlowTests(TestCase):
     def test_session_no_tasks(self):
         c = Customer.objects.create(store=self.store, name="NoTask")
         response = self.client.get(self._session_url(c))
-        self.assertContains(response, "全てのヒアリングが完了しています")
+        self.assertContains(response, "ヒアリング完了")
 
     def test_session_recent_visits(self):
         c = Customer.objects.create(store=self.store, name="VisitHist")

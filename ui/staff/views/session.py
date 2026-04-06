@@ -78,12 +78,34 @@ class SessionView(LoginRequiredMixin, StaffRequiredMixin, StoreMixin, TemplateVi
         )
         last_visited_at = recent_visits[0].visited_at if recent_visits else None
 
+        hearing_summary = []
+        for field_name, config in TASK_FIELD_CONFIG.items():
+            raw_value = getattr(customer, field_name, None)
+            if raw_value is not None and raw_value != "":
+                if config.get("type") == "selection":
+                    display = raw_value
+                    for choice_val, label in config.get("choices", []):
+                        if choice_val == raw_value:
+                            display = label
+                            break
+                else:
+                    display = str(raw_value)
+            else:
+                display = None
+            hearing_summary.append(
+                {
+                    "label": config["label"],
+                    "value": display,
+                }
+            )
+
         context["customer"] = customer
         context["last_visited_at"] = last_visited_at
         context["tasks"] = open_tasks
         context["recent_visits"] = recent_visits
         context["active_tab"] = "session"
         context["session_url"] = f"/s/customers/{customer.pk}/session/"
+        context["hearing_summary"] = hearing_summary
         return context
 
 
