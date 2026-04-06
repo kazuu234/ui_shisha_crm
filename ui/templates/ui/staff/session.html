@@ -28,10 +28,15 @@
     <div
       x-show="allDone"
       x-transition
-      class="text-center text-text-secondary py-8 flex flex-col items-center gap-3"
+      id="hearing-summary"
+      hx-get="/s/customers/{{ customer.pk }}/session/hearing-summary/"
+      hx-trigger="all-tasks-done from:body"
+      hx-swap="innerHTML"
+      class="bg-bg-surface rounded-md border border-border-default p-5"
     >
-      {% include "ui/icons/check-circle.svg" %}
-      <p class="text-[17px]">全てのヒアリングが完了しています</p>
+      {% if not tasks %}
+        {% include "ui/staff/_hearing_summary.html" %}
+      {% endif %}
     </div>
   </section>
 

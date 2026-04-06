@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from accounts.models import Staff
 from customers.models import Customer
+from tasks.models import HearingTask
 from tenants.models import Store, StoreGroup
 from visits.models import Visit
 
@@ -672,3 +673,128 @@ class US03VisitListTests(TestCase):
         c = Customer.objects.create(store=self.store, name="SU")
         response = self.client.get(self._list_url(c))
         self.assertEqual(response.context["session_url"], f"/s/customers/{c.pk}/session/")
+
+
+class US03SessionHearingSummaryTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.store_group = StoreGroup.objects.create(name="US03 Hearing Summary Group")
+        cls.store = Store.objects.create(store_group=cls.store_group, name="US03 Hearing Store")
+        cls.staff = Staff.objects.create_user(
+            store=cls.store,
+            display_name="Hearing Staff",
+            role="staff",
+            staff_type="regular",
+        )
+
+    def setUp(self):
+        self.client.force_login(self.staff)
+
+    def _session_url(self, customer):
+        return f"/s/customers/{customer.pk}/session/"
+
+    def _reset_hearing_tasks_closed(self, customer, field_names):
+        HearingTask.objects.filter(store=self.store, customer=customer).delete()
+        for field_name in field_names:
+            HearingTask.objects.create(
+                store=self.store,
+                customer=customer,
+                field_name=field_name,
+                status=HearingTask.STATUS_CLOSED,
+            )
+
+    def test_session_hearing_summary_all_done(self):
+        c = Customer.objects.create(
+            store=self.store,
+            name="HearDone",
+            age=20,
+            area="渋谷",
+            shisha_experience="beginner",
+        )
+        self._reset_hearing_tasks_closed(c, ("age", "area", "shisha_experience"))
+        response = self.client.get(self._session_url(c))
+        self.assertContains(response, "ヒアリング完了")
+        self.assertContains(response, "20代")
+        self.assertContains(response, "渋谷")
+        self.assertContains(response, "初心者")
+
+    def test_session_hearing_summary_partial(self):
+        c = Customer.objects.create(
+            store=self.store,
+            name="HearPartial",
+            age=20,
+            area=None,
+            shisha_experience=None,
+        )
+        self._reset_hearing_tasks_closed(c, ("age", "area", "shisha_experience"))
+        response = self.client.get(self._session_url(c))
+        self.assertContains(response, "20代")
+        self.assertGreaterEqual(response.content.decode().count("未入力"), 2)
+
+    def test_session_hearing_summary_edit_link(self):
+        c = Customer.objects.create(
+            store=self.store,
+            name="HearEdit",
+            age=30,
+            area="港区",
+            shisha_experience="intermediate",
+        )
+        self._reset_hearing_tasks_closed(c, ("age", "area", "shisha_experience"))
+        response = self.client.get(self._session_url(c))
+        self.assertContains(response, f'/s/customers/{c.pk}/edit/')
+        self.assertContains(response, "顧客情報を編集")
+
+    def test_session_hearing_summary_not_shown_when_tasks_open(self):
+        c = Customer.objects.create(
+            store=self.store,
+            name="HearOpen",
+            age=20,
+            area="渋谷",
+            shisha_experience="beginner",
+        )
+        HearingTask.objects.filter(store=self.store, customer=c).delete()
+        HearingTask.objects.create(
+            store=self.store,
+            customer=c,
+            field_name="age",
+            status=HearingTask.STATUS_OPEN,
+        )
+        response = self.client.get(self._session_url(c))
+        self.assertNotContains(response, "ヒアリング完了")
+
+    def test_hearing_summary_fragment_returns_latest_data(self):
+        c = Customer.objects.create(
+            store=self.store,
+            name="FragLatest",
+            age=10,
+            area="旧エリア",
+            shisha_experience="beginner",
+        )
+        self._reset_hearing_tasks_closed(c, ("age", "area", "shisha_experience"))
+        fragment_url = f"/s/customers/{c.pk}/session/hearing-summary/"
+        response_before = self.client.get(fragment_url)
+        self.assertEqual(response_before.status_code, 200)
+        self.assertContains(response_before, "10代")
+
+        Customer.objects.filter(pk=c.pk).update(age=20)
+        response_after = self.client.get(fragment_url)
+        self.assertEqual(response_after.status_code, 200)
+        self.assertContains(response_after, "20代")
+        self.assertNotContains(response_after, "10代")
+
+    def test_hearing_summary_fragment_returns_empty_when_tasks_open(self):
+        """未完了タスクがある場合、フラグメントは 204 を返す"""
+        c = Customer.objects.create(
+            store=self.store,
+            name="HearFragOpen",
+            age=20,
+        )
+        HearingTask.objects.filter(store=self.store, customer=c).delete()
+        HearingTask.objects.create(
+            store=self.store,
+            customer=c,
+            field_name="age",
+            status=HearingTask.STATUS_OPEN,
+        )
+        response = self.client.get(f"/s/customers/{c.pk}/session/hearing-summary/")
+        self.assertEqual(response.status_code, 204)
