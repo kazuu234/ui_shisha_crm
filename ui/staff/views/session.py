@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import QueryDict
+from django.http import HttpResponse, QueryDict
 from django.shortcuts import get_object_or_404, render
 from django.views import View
 from django.views.generic import TemplateView
@@ -245,6 +245,12 @@ class SessionHearingSummaryFragmentView(LoginRequiredMixin, StaffRequiredMixin, 
 
     def get(self, request, pk):
         customer = get_object_or_404(Customer.objects.for_store(self.store), pk=pk)
+        has_open = HearingTask.objects.for_store(self.store).filter(
+            customer=customer,
+            status=HearingTask.STATUS_OPEN,
+        ).exists()
+        if has_open:
+            return HttpResponse(status=204)
         hearing_summary = _build_hearing_summary(customer)
         return render(
             request,

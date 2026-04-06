@@ -770,6 +770,7 @@ class US03SessionHearingSummaryTests(TestCase):
             area="旧エリア",
             shisha_experience="beginner",
         )
+        self._reset_hearing_tasks_closed(c, ("age", "area", "shisha_experience"))
         fragment_url = f"/s/customers/{c.pk}/session/hearing-summary/"
         response_before = self.client.get(fragment_url)
         self.assertEqual(response_before.status_code, 200)
@@ -780,3 +781,20 @@ class US03SessionHearingSummaryTests(TestCase):
         self.assertEqual(response_after.status_code, 200)
         self.assertContains(response_after, "20代")
         self.assertNotContains(response_after, "10代")
+
+    def test_hearing_summary_fragment_returns_empty_when_tasks_open(self):
+        """未完了タスクがある場合、フラグメントは 204 を返す"""
+        c = Customer.objects.create(
+            store=self.store,
+            name="HearFragOpen",
+            age=20,
+        )
+        HearingTask.objects.filter(store=self.store, customer=c).delete()
+        HearingTask.objects.create(
+            store=self.store,
+            customer=c,
+            field_name="age",
+            status=HearingTask.STATUS_OPEN,
+        )
+        response = self.client.get(f"/s/customers/{c.pk}/session/hearing-summary/")
+        self.assertEqual(response.status_code, 204)
